@@ -77,3 +77,25 @@ app.post("/api/summaries", async (req, res) => {
     });
   }
 });
+
+app.get("/api/summaries", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT *
+      FROM summaries
+      ORDER BY created_at DESC
+    `);
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch summaries",
+    });
+  }
+});
