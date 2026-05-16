@@ -49,4 +49,31 @@ app.get("/api/test-db", async (req, res) => {
       error: "Database insert failed",
     });
   }
-});  
+});
+
+app.post("/api/summaries", async (req, res) => {
+  try {
+    const { title, content, source } = req.body;
+
+    const result = await pool.query(
+      `
+      INSERT INTO summaries (title, content, source)
+      VALUES ($1, $2, $3)
+      RETURNING *
+      `,
+      [title, content, source]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to create summary",
+    });
+  }
+});
