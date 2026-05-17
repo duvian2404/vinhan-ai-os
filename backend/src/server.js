@@ -30,7 +30,7 @@ pool.connect()
     console.error("DB connection error:", err);
   });
 
-app.get("/api/test-db", async (req, res) => {
+app.get("/api/test-db", async (req, res) => { 
   try {
     const result = await pool.query(`
       INSERT INTO summaries (title, content, source)
@@ -96,6 +96,32 @@ app.get("/api/summaries", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to fetch summaries",
+    });
+  }
+});
+
+app.delete("/api/summaries/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await pool.query(
+      `
+      DELETE FROM summaries
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: "Summary deleted",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete summary",
     });
   }
 });
