@@ -125,3 +125,36 @@ app.delete("/api/summaries/:id", async (req, res) => {
     });
   }
 });
+
+app.put("/api/summaries/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { title, content, source } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE summaries
+      SET
+        title = $1,
+        content = $2,
+        source = $3
+      WHERE id = $4
+      RETURNING *
+      `,
+      [title, content, source, id]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to update summary",
+    });
+  }
+});

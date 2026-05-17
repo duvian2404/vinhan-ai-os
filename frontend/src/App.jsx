@@ -25,7 +25,7 @@ function App() {
     fetchSummaries();
   }, []);
 
-  const handleSubmit = async (e) => {
+ /* const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
@@ -56,7 +56,59 @@ function App() {
     } catch (error) {
       console.error(error);
     }
-  };
+  }; */
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    let response;
+
+    if (editingId) {
+      response = await fetch(
+        `http://localhost:3000/api/summaries/${editingId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            content,
+            source,
+          }),
+        }
+      );
+    } else {
+      response = await fetch(
+        "http://localhost:3000/api/summaries",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            content,
+            source,
+          }),
+        }
+      );
+    }
+
+    await response.json();
+
+    setTitle("");
+    setContent("");
+    setSource("");
+
+    setEditingId(null);
+
+    fetchSummaries();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 
 const handleDelete = async (id) => {
   try {
@@ -72,6 +124,8 @@ const handleDelete = async (id) => {
     console.error(error);
   }
 };
+
+const [editingId, setEditingId] = useState(null);
 
   return (
     <div
@@ -139,6 +193,18 @@ const handleDelete = async (id) => {
                   onClick={() => handleDelete(summary.id)}
                 >
               Delete
+              </button>
+
+              <button
+                  onClick={() => {
+                    setEditingId(summary.id);
+
+                    setTitle(summary.title);
+                    setContent(summary.content);
+                    setSource(summary.source);
+      }}
+                >
+                 Edit
               </button>
             </div>
 
