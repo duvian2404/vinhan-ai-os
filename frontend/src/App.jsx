@@ -229,6 +229,8 @@ function App() {
 
   const [editingId, setEditingId] = useState(null);
 
+  const [search, setSearch] = useState("");
+
   const fetchSummaries = () => {
     fetch("http://localhost:3000/api/summaries")
       .then((res) => res.json())
@@ -281,7 +283,15 @@ function App() {
 
     fetchSummaries();
   };
-
+  const filteredSummaries = summaries.filter(
+  (summary) =>
+    summary.title
+      .toLowerCase()
+      .includes(search.toLowerCase()) ||
+    summary.content
+      .toLowerCase()
+      .includes(search.toLowerCase())
+);
 
 
  /* return (
@@ -397,11 +407,57 @@ function App() {
       
       <div className="mb-10">
         <h1 className="text-5xl font-bold mb-3">
-          My AI OS 🚀
+          VinhAn-ai-os 🚀
         </h1>
 
         <p className="text-zinc-400 text-lg">
           AI-powered summaries dashboard
+          <div className="mb-8">
+  <input
+    type="text"
+    placeholder="Search summaries..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl outline-none focus:border-blue-500"
+  />
+
+<div className="grid grid-cols-3 gap-4 mb-8">
+  
+  <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+    <p className="text-zinc-400 text-sm mb-2">
+      Total Summaries
+    </p>
+
+    <h2 className="text-3xl font-bold">
+      {summaries.length}
+    </h2>
+  </div>
+
+  <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+    <p className="text-zinc-400 text-sm mb-2">
+      AI Sources
+    </p>
+
+    <h2 className="text-3xl font-bold">
+      {
+        new Set(
+          summaries.map((s) => s.source)
+        ).size
+      }
+    </h2>
+  </div>
+
+  <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+    <p className="text-zinc-400 text-sm mb-2">
+      Dashboard Status
+    </p>
+
+    <h2 className="text-2xl font-bold text-green-400">
+      Online
+    </h2>
+  </div>
+</div>  
+</div>
         </p>
       </div>
 
@@ -454,7 +510,7 @@ function App() {
         </div>
       ) : (
         <div className="space-y-5">
-          {summaries.map((summary) => (
+          {filteredSummaries.map((summary) => (
             <div
               key={summary.id}
               className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6"
