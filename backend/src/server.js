@@ -7,6 +7,12 @@ const app = express();
 
 const pool = require("./config/db");
 
+const {
+  GoogleGenerativeAI,
+} = require("@google/generative-ai");
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 app.use(cors());
 app.use(express.json());
 
@@ -18,6 +24,40 @@ app.get("/api/health", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+
+app.post("/api/ai-summary", async (req, res) => {
+  
+  try {
+    const { content } = req.body;
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-3-flash-preview",
+    });
+
+    const result = await model.generateContent(
+      `Summarize this clearly:\n\n${content}`
+    );
+
+    const response = await result.response;
+
+    const summary = response.text();
+
+    res.json({
+      success: true,
+      summary,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: "AI summary failed",
+    });
+  }
+});
+
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
@@ -158,3 +198,4 @@ app.put("/api/summaries/:id", async (req, res) => {
     });
   }
 });
+
