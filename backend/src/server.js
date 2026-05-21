@@ -1,17 +1,21 @@
 require("dotenv").config();
-
+// const cho express
 const express = require("express");
 const cors = require("cors");
-
 const app = express();
 
+// const cho postgres pool
 const pool = require("./config/db");
 
+// const cho google gen ai sdk
 const {
   GoogleGenerativeAI,
 } = require("@google/generative-ai");
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+//const cho axios va cheerio cho web scraping (nếu cần)
+const axios = require("axios");
+const cheerio = require("cheerio");
 
 app.use(cors());
 app.use(express.json());
@@ -22,10 +26,10 @@ app.get("/api/health", (req, res) => {
     message: "My AI OS backend is running 🚀",
   });
 });
-
+//const PORT = 3000;
 const PORT = process.env.PORT || 3000;
 
-
+// API endpoint cho AI summary
 app.post("/api/ai-summary", async (req, res) => {
   
   try {
@@ -58,7 +62,7 @@ app.post("/api/ai-summary", async (req, res) => {
 });
 
 
-
+// API endpoints cho CRUD summaries
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
@@ -91,6 +95,7 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
+// API endpoint cho tạo summary mới
 app.post("/api/summaries", async (req, res) => {
   try {
     const { title, content, source } = req.body;
@@ -118,6 +123,7 @@ app.post("/api/summaries", async (req, res) => {
   }
 });
 
+// API endpoint cho lấy tất cả summaries
 app.get("/api/summaries", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -140,6 +146,7 @@ app.get("/api/summaries", async (req, res) => {
   }
 });
 
+// API endpoint cho xóa summary
 app.delete("/api/summaries/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -166,6 +173,7 @@ app.delete("/api/summaries/:id", async (req, res) => {
   }
 });
 
+// API endpoint cho cập nhật summary
 app.put("/api/summaries/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -195,6 +203,68 @@ app.put("/api/summaries/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to update summary",
+    });
+  }
+});
+
+// API endpoint cho tóm tắt bài báo từ URL
+app.post("/api/article-summary", async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    // Fetch webpage
+    const response = await axios.get(url, {
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+  },
+});
+
+    // Load HTML
+    const $ = cheerio.load(response.data);
+
+    // Extract paragraphs
+    let articleText = "";
+
+    $("p").each((i, el) => {
+      articleText += $(el).text() + "\n";
+    });
+
+    // Limit text size
+    articleText = articleText.slice(0, 5000);
+
+    // Gemini model
+    const model = genAI.getGenerativeModel({
+      model: "gemini-3-flash-preview",
+    });
+
+    // Generate summary
+    const result = await model.generateContent(
+      `
+      Hãy tóm tắt bài viết sau bằng tiếng Việt, ngắn gọn, rõ ràng, dễ hiểu.
+      
+      Bài viết:
+
+      ${articleText}
+      `
+    );
+    
+    // Lấy response từ Gemini
+    const aiResponse = await result.response;
+    const summary = aiResponse.text();
+
+    res.json({
+      success: true,
+      summary,
+      preview: articleText.slice(0, 300),
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: "Article summary failed",
     });
   }
 });

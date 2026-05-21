@@ -3,20 +3,35 @@
 import { useEffect, useState } from "react";
 
 function App() {
+// State cho summaries  
   const [summaries, setSummaries] = useState([]);
+
+  // State cho loading  
   const [loading, setLoading] = useState(true);
 
+  // State cho title
   const [title, setTitle] = useState("");
+
+  // State cho content và source  
   const [content, setContent] = useState("");
+
+  // State cho source  
   const [source, setSource] = useState("");
 
+  // State cho edit
   const [editingId, setEditingId] = useState(null);
 
+  // State cho search
   const [search, setSearch] = useState("");
 
+  // State cho AI summary loading
   const [aiLoading, setAiLoading] =
   useState(false);
 
+// State cho article URL
+  const [articleUrl, setArticleUrl] =
+  useState("");
+  // Fetch summaries từ backend
   const fetchSummaries = () => {
     fetch("http://localhost:3000/api/summaries")
       .then((res) => res.json())
@@ -29,7 +44,8 @@ function App() {
   useEffect(() => {
     fetchSummaries();
   }, []);
-
+  
+  // API endpoint cho tạo summary mới
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -59,6 +75,7 @@ function App() {
     fetchSummaries();
   };
 
+  // API endpoint cho xóa summary
   const handleDelete = async (id) => {
     await fetch(
       `http://localhost:3000/api/summaries/${id}`,
@@ -79,6 +96,7 @@ function App() {
       .includes(search.toLowerCase())
 );
 
+// API endpoint cho AI summary
   const handleAISummary = async () => {
   try {
     setAiLoading(true);
@@ -109,7 +127,41 @@ function App() {
   }
 };
 
- 
+
+// API endpoint cho lấy tất cả summaries
+ const handleArticleSummary = async () => {
+  try {
+    setAiLoading(true);
+
+    const response = await fetch(
+      "http://localhost:3000/api/article-summary",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          url: articleUrl,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    setContent(data.summary);
+
+    setTitle("AI Article Summary");
+
+    setSource(articleUrl);
+
+    setAiLoading(false);
+  } catch (error) {
+    console.error(error);
+
+    setAiLoading(false);
+  }
+};
   return (
   <div className="min-h-screen bg-zinc-950 text-white p-8">
     <div className="max-w-4xl mx-auto">
@@ -169,6 +221,33 @@ function App() {
 </div>
         </p>
       </div>
+
+<div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8">
+  <h2 className="text-2xl font-bold mb-4">
+    Article Intelligence 🤖
+  </h2>
+
+  <div className="flex gap-3">
+    <input
+      type="text"
+      placeholder="Paste article URL..."
+      value={articleUrl}
+      onChange={(e) =>
+        setArticleUrl(e.target.value)
+      }
+      className="flex-1 bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-purple-500"
+    />
+
+    <button
+      onClick={handleArticleSummary}
+      className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-xl font-semibold"
+    >
+      {aiLoading
+        ? "Reading..."
+        : "Summarize URL"}
+    </button>
+  </div>
+</div>
 
       <form
         onSubmit={handleSubmit}
