@@ -31,6 +31,9 @@ function App() {
 // State cho article URL
   const [articleUrl, setArticleUrl] =
   useState("");
+
+  const [cachedResult, setCachedResult] =
+  useState(false);
   // Fetch summaries từ backend
   const fetchSummaries = () => {
     fetch("http://localhost:3000/api/summaries")
@@ -148,14 +151,17 @@ function App() {
     );
 
     const data = await response.json();
-
+    // Lưu trạng thái cache vào state
+    setCachedResult(data.cached || false);
     setContent(data.summary);
 
     setTitle("AI Article Summary");
 
     setSource(articleUrl);
-
+    fetchSummaries();
     setAiLoading(false);
+    
+    
   } catch (error) {
     console.error(error);
 
@@ -225,6 +231,13 @@ function App() {
 <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8">
   <h2 className="text-2xl font-bold mb-4">
     Article Intelligence 🤖
+    {cachedResult ? (
+  <div className="mt-3 inline-block bg-green-500/20 text-green-400 px-4 py-2 rounded-xl text-sm font-semibold">
+    ⚡ Cached Result
+  </div>) : ( <div className="mt-3 inline-block bg-blue-500/20 text-blue-400 px-4 py-2 rounded-xl text-sm font-semibold">
+    🤖 Fresh AI Summary
+  </div>)
+    }
   </h2>
 
   <div className="flex gap-3">

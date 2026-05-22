@@ -47,6 +47,7 @@ app.post("/api/ai-summary", async (req, res) => {
 
     const summary = response.text();
 
+    
     res.json({
       success: true,
       summary,
@@ -212,6 +213,25 @@ app.post("/api/article-summary", async (req, res) => {
   try {
     const { url } = req.body;
 
+    
+// Kiểm tra nếu đã có summary cho URL này trong DB
+    const existingSummary = await pool.query(
+  `
+  SELECT * FROM summaries
+  WHERE source = $1
+  LIMIT 1
+  `,
+  [url]
+);
+// Nếu đã có thì trả về luôn, không cần gọi Gemini nữa
+  if (existingSummary.rows.length > 0) {
+  return res.json({
+    success: true,
+    summary:
+      existingSummary.rows[0].content,
+    cached: true,
+  });
+}
     // Fetch webpage
     const response = await axios.get(url, {
   headers: {
@@ -249,10 +269,24 @@ app.post("/api/article-summary", async (req, res) => {
       `
     );
     
+   
     // Lấy response từ Gemini
     const aiResponse = await result.response;
     const summary = aiResponse.text();
-
+// Lưu summary vào DB
+    await pool.query(
+  `
+  INSERT INTO summaries
+  (title, content, source)
+  VALUES ($1, $2, $3) 
+  ` ,
+  [
+    "AI Article Summary",
+    summary,
+    url,
+  ]  
+);
+console.log("SAVED!");
     res.json({
       success: true,
       summary,
