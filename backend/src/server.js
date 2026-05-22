@@ -261,18 +261,46 @@ app.post("/api/article-summary", async (req, res) => {
     // Generate summary
     const result = await model.generateContent(
       `
-      Hãy tóm tắt bài viết sau bằng tiếng Việt, ngắn gọn, rõ ràng, dễ hiểu.
-      
-      Bài viết:
+Hãy đọc bài viết sau và trả về:
 
-      ${articleText}
-      `
+1. Tiêu đề ngắn gọn bằng tiếng Việt
+2. Bản tóm tắt rõ ràng bằng tiếng Việt
+
+Format trả về:
+
+TITLE:
+...
+
+SUMMARY:
+...
+
+Bài viết:
+
+${articleText}
+`
     );
     
    
     // Lấy response từ Gemini
     const aiResponse = await result.response;
-    const summary = aiResponse.text();
+    const fullText = aiResponse.text();
+// Tách tiêu đề và summary từ response
+const titleMatch =
+  fullText.match(/TITLE:\s*(.*)/);
+
+const summaryMatch =
+  fullText.match(
+    /SUMMARY:\s*([\s\S]*)/
+  );
+
+const aiTitle = titleMatch
+  ? titleMatch[1]
+  : "AI Article Summary";
+
+const summary = summaryMatch
+  ? summaryMatch[1]
+  : fullText;
+//    const summary = aiResponse.text();
 // Lưu summary vào DB
     await pool.query(
   `
@@ -281,7 +309,7 @@ app.post("/api/article-summary", async (req, res) => {
   VALUES ($1, $2, $3) 
   ` ,
   [
-    "AI Article Summary",
+    aiTitle,
     summary,
     url,
   ]  
@@ -291,6 +319,7 @@ console.log("SAVED!");
       success: true,
       summary,
       preview: articleText.slice(0, 300),
+      title: aiTitle,
     });
 
   } catch (error) {

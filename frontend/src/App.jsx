@@ -155,7 +155,7 @@ function App() {
     setCachedResult(data.cached || false);
     setContent(data.summary);
 
-    setTitle("AI Article Summary");
+    setTitle(data.title);
 
     setSource(articleUrl);
     fetchSummaries();
@@ -278,7 +278,7 @@ function App() {
           placeholder="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl h-32 outline-none focus:border-blue-500"
+          className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl h-90 outline-none focus:border-blue-500"
         />
 
         <input
