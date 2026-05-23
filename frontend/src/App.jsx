@@ -223,6 +223,8 @@ function App() {
       Online
     </h2>
   </div>
+
+  
 </div>  
 </div>
         </p>
@@ -266,6 +268,7 @@ function App() {
         onSubmit={handleSubmit}
         className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8 space-y-4"
       >
+        
         <input
           type="text"
           placeholder="Title"
@@ -329,10 +332,26 @@ function App() {
       ) : (
         <div className="space-y-5">
           {filteredSummaries.map((summary) => (
+            
+            // Hiển thị tags nếu có
             <div
               key={summary.id}
               className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6"
             >
+              //
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {summary.tags
+                  ?.split(",")
+                  .map((tag, index) => (
+              <span
+                key={index}
+                className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm"
+              >
+              #{tag.trim()}
+              </span>
+              ))}
+            </div>
+            
               <h2 className="text-2xl font-bold mb-3">
                 {summary.title}
               </h2>

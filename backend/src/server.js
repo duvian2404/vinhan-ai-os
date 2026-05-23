@@ -265,6 +265,7 @@ Hãy đọc bài viết sau và trả về:
 
 1. Tiêu đề ngắn gọn bằng tiếng Việt
 2. Bản tóm tắt rõ ràng bằng tiếng Việt
+3. 3 đến 5 tags liên quan
 
 Format trả về:
 
@@ -274,6 +275,8 @@ TITLE:
 SUMMARY:
 ...
 
+TAGS:
+AI, OpenAI, Coding
 Bài viết:
 
 ${articleText}
@@ -300,18 +303,27 @@ const aiTitle = titleMatch
 const summary = summaryMatch
   ? summaryMatch[1]
   : fullText;
+
+const tagsMatch =
+  fullText.match(/TAGS:\s*(.*)/);
+
+const tags = tagsMatch
+  ? tagsMatch[1]
+  : "";
+
 //    const summary = aiResponse.text();
 // Lưu summary vào DB
     await pool.query(
   `
   INSERT INTO summaries
-  (title, content, source)
-  VALUES ($1, $2, $3) 
+  (title, content, source, tags)
+  VALUES ($1, $2, $3, $4)
   ` ,
   [
     aiTitle,
     summary,
     url,
+    tags,
   ]  
 );
 console.log("SAVED!");
