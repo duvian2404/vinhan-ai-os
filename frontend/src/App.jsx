@@ -11,6 +11,9 @@ function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [articleUrl, setArticleUrl] = useState("");
   const [cachedResult, setCachedResult] = useState(false);
+
+  const [selectedTag, setSelectedTag] = useState("");
+
   const fetchSummaries = () => {
     fetch("http://localhost:3000/api/summaries")
       .then((res) => res.json())
@@ -19,6 +22,11 @@ function App() {
         setLoading(false);
       });
   };
+  // tao filter summaries
+  const filteredSummaries = selectedTag
+    ? summaries.filter((summary) => summary.tags?.includes(selectedTag))
+    : summaries;
+
   // API endpoint cho lấy tất cả summaries
   useEffect(() => {
     fetchSummaries();
@@ -62,11 +70,11 @@ function App() {
     fetchSummaries();
   };
   // Lọc summaries dựa trên search query
-  const filteredSummaries = summaries.filter(
-    (summary) =>
-      summary.title.toLowerCase().includes(search.toLowerCase()) ||
-      summary.content.toLowerCase().includes(search.toLowerCase()),
-  );
+  // const filteredSummaries = summaries.filter(
+  //   (summary) =>
+  //     summary.title.toLowerCase().includes(search.toLowerCase()) ||
+  //     summary.content.toLowerCase().includes(search.toLowerCase()),
+  // );
 
   // API endpoint cho AI summary từ content
   const handleAISummary = async () => {
@@ -149,7 +157,7 @@ function App() {
                   <p className="text-zinc-400 text-sm mb-2">AI Sources</p>
 
                   <h2 className="text-3xl font-bold">
-                    {new Set(summaries.map((s) => s.source)).size}
+                    {new Set(filteredSummaries.map((s) => s.source)).size}
                   </h2>
                 </div>
 
@@ -207,13 +215,34 @@ function App() {
             className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-blue-500"
           />
 
+          {selectedTag && (
+            <div className="mb-6 flex items-center gap-3 bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl">
+              <span className="text-zinc-400">Showing</span>
+
+              <span className="font-bold text-purple-400">
+                {filteredSummaries.length}
+              </span>
+
+              <span className="text-zinc-400">articles for</span>
+
+              <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full">
+                #{selectedTag}
+              </span>
+
+              <button
+                onClick={() => setSelectedTag("")}
+                className="ml-auto text-sm bg-zinc-800 hover:bg-zinc-700 transition px-4 py-2 rounded-xl"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           <textarea
             placeholder="Content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl h-90 outline-none focus:border-blue-500"
           />
-
           <input
             type="text"
             placeholder="Source"
@@ -221,7 +250,6 @@ function App() {
             onChange={(e) => setSource(e.target.value)}
             className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-blue-500"
           />
-
           <button
             type="submit"
             className="bg-blue-600 hover:bg-blue-500 transition px-6 py-3 rounded-xl font-semibold"
@@ -261,12 +289,13 @@ function App() {
               >
                 <div className="flex gap-2 mt-3 flex-wrap">
                   {summary.tags?.split(",").map((tag, index) => (
-                    <span
+                    <button
                       key={index}
-                      className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm"
+                      onClick={() => setSelectedTag(tag.trim())}
+                      className="bg-purple-500/20 hover:bg-purple-500/40 transition text-purple-300 px-3 py-1 rounded-full text-sm"
                     >
                       #{tag.trim()}
-                    </span>
+                    </button>
                   ))}
                 </div>
 
@@ -279,6 +308,14 @@ function App() {
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-500 text-sm">
                     {summary.source}
+                    <a
+                      href={summary.source}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 text-sm underline"
+                    >
+                      🔗 Read Original Article
+                    </a>
                   </span>
 
                   <div className="flex gap-3">
