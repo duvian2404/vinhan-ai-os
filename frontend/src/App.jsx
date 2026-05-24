@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 // Main App component
 function App() {
   const [summaries, setSummaries] = useState([]);
@@ -13,6 +14,10 @@ function App() {
   const [cachedResult, setCachedResult] = useState(false);
 
   const [selectedTag, setSelectedTag] = useState("");
+
+  const [rssEnabled, setRssEnabled] = useState(false);
+
+  const [rssFeedUrl, setRssFeedUrl] = useState("");
 
   const fetchSummaries = () => {
     fetch("http://localhost:3000/api/summaries")
@@ -30,6 +35,15 @@ function App() {
   // API endpoint cho lấy tất cả summaries
   useEffect(() => {
     fetchSummaries();
+    const fetchRssConfig = async () => {
+      const response = await axios.get("http://localhost:3000/api/rss-config");
+
+      setRssEnabled(response.data.rssEnabled);
+
+      setRssFeedUrl(response.data.rssFeedUrl);
+    };
+
+    fetchRssConfig();
   }, []);
 
   // API endpoint cho tạo summary mới
@@ -127,6 +141,16 @@ function App() {
       setAiLoading(false);
     }
   };
+  //-----------
+
+  const saveRssConfig = async () => {
+    await axios.post("http://localhost:3000/api/rss-config", {
+      enabled: rssEnabled,
+      feedUrl: rssFeedUrl,
+    });
+
+    alert("RSS Config Saved 😄");
+  };
 
   //===================Hien thi ra Browser=================
   return (
@@ -184,7 +208,34 @@ function App() {
               </div>
             )}
           </h2>
+          <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
+            <h2 className="text-xl font-bold mb-4">RSS Control Panel</h2>
 
+            <div className="flex items-center gap-3 mb-4">
+              <input
+                type="checkbox"
+                checked={rssEnabled}
+                onChange={(e) => setRssEnabled(e.target.checked)}
+              />
+
+              <span>Auto RSS Import</span>
+            </div>
+
+            <input
+              type="text"
+              value={rssFeedUrl}
+              onChange={(e) => setRssFeedUrl(e.target.value)}
+              placeholder="RSS Feed URL"
+              className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
+            />
+
+            <button
+              onClick={saveRssConfig}
+              className="bg-purple-600 px-5 py-3 rounded-xl"
+            >
+              Save RSS Config
+            </button>
+          </div>
           <div className="flex gap-3">
             <input
               type="text"

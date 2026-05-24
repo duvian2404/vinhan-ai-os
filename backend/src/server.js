@@ -1,4 +1,8 @@
 require("dotenv").config();
+
+let rssEnabled = false;
+
+let rssFeedUrl = "https://genk.vn/rss/home.rss";
 //=============== Imports =================
 // Các thư viện cần thiết
 const express = require("express");
@@ -309,9 +313,7 @@ app.post("/api/article-summary", async (req, res) => {
 //====================API endpoint cho test RSS feed=================
 app.get("/api/rss-test", async (req, res) => {
   try {
-    const feed = await parser.parseURL(
-      "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-    );
+    const feed = await rssFeedUrl;
 
     const articles = feed.items.slice(0, 5);
 
@@ -384,96 +386,6 @@ async function importRSS() {
 }
 // Hàm xử lý tóm tắt bài viết từ URL, có kiểm tra cache trước khi gọi Gemini
 async function processArticle(url) {
-  //   // CHECK CACHE
-  //   const existingSummary = await pool.query(
-  //     `
-  //       SELECT *
-  //       FROM summaries
-  //       WHERE source = $1
-  //       LIMIT 1
-  //       `,
-  //     [url],
-  //   );
-
-  //   if (existingSummary.rows.length > 0) {
-  //     console.log("⚡ Cached:", url);
-
-  //     return existingSummary.rows[0];
-  //   }
-
-  //   // SCRAPE ARTICLE
-  //   const response = await axios.get(url, {
-  //     headers: {
-  //       "User-Agent": "Mozilla/5.0",
-  //     },
-  //   });
-
-  //   const $ = cheerio.load(response.data);
-
-  //   const articleText = $("p")
-  //     .map((i, el) => $(el).text())
-  //     .get()
-  //     .join(" ");
-
-  //   // AI
-  //   const result = await model.generateContent(`
-  // Hãy đọc bài viết sau và trả về:
-
-  // 1. Tiêu đề ngắn gọn bằng tiếng Việt
-  // 2. Tóm tắt rõ ràng bằng tiếng Việt
-  // 3. 3 đến 5 tags liên quan
-
-  // Format:
-
-  // TITLE:
-  // ...
-
-  // SUMMARY:
-  // ...
-
-  // TAGS:
-  // AI, Technology
-
-  // Bài viết:
-
-  // ${articleText}
-  // `);
-
-  //   const aiResponse = await result.response;
-
-  //   const fullText = aiResponse.text();
-
-  //   const titleMatch = fullText.match(/TITLE:\s*(.*)/);
-
-  //   const summaryMatch = fullText.match(/SUMMARY:\s*([\s\S]*?)TAGS:/);
-
-  //   const tagsMatch = fullText.match(/TAGS:\s*(.*)/);
-
-  //   const aiTitle = titleMatch ? titleMatch[1] : "AI Summary";
-
-  //   const summary = summaryMatch ? summaryMatch[1] : fullText;
-
-  //   const tags = tagsMatch ? tagsMatch[1] : "";
-
-  //   // SAVE DB
-  //   await pool.query(
-  //     `
-  //     INSERT INTO summaries
-  //     (title, content, source, tags)
-  //     VALUES ($1, $2, $3, $4)
-  //     `,
-  //     [aiTitle, summary, url, tags],
-  //   );
-
-  //   console.log("✅ Saved:", aiTitle);
-
-  //   return {
-  //     title: aiTitle,
-  //     content: summary,
-  //     source: url,
-  //     tags,
-  //   };
-  // }
   const existingSummary = await pool.query(
     `
           SELECT * FROM summaries
@@ -564,8 +476,35 @@ async function processArticle(url) {
 }
 
 // Thiết lập cron job chạy mỗi 30 phút để tự động import RSS feed
-cron.schedule("*/30 * * * *", async () => {
+
+cron.schedule("* * * * *", async () => {
+  if (!rssEnabled) {
+    return;
+  }
+
   console.log("🤖 Running RSS import...");
 
   await importRSS();
+});
+// API endpoint để lấy cấu hình RSS feed cho frontend
+app.get("/api/rss-config", (req, res) => {
+  res.json({
+    rssEnabled,
+    rssFeedUrl,
+  });
+});
+// API endpoint để cập nhật cấu hình RSS feed từ frontend
+app.post("/api/rss-config", (req, res) => {
+  const { enabled, feedUrl } = req.body;
+
+  rssEnabled = enabled;
+  rssFeedUrl = feedUrl;
+
+  console.log("⚙️ RSS CONFIG UPDATED");
+
+  res.json({
+    success: true,
+    rssEnabled,
+    rssFeedUrl,
+  });
 });
