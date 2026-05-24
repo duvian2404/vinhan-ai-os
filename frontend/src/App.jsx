@@ -19,6 +19,8 @@ function App() {
 
   const [rssFeedUrl, setRssFeedUrl] = useState("");
 
+  const [visibleCount, setVisibleCount] = useState(5);
+
   const fetchSummaries = () => {
     fetch("http://localhost:3000/api/summaries")
       .then((res) => res.json())
@@ -332,7 +334,7 @@ function App() {
           </div>
         ) : (
           <div className="space-y-5">
-            {filteredSummaries.map((summary) => (
+            {filteredSummaries.slice(0, visibleCount).map((summary) => (
               // Hiển thị tags nếu có
               <div
                 key={summary.id}
@@ -393,6 +395,16 @@ function App() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        {visibleCount < filteredSummaries.length && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => setVisibleCount(visibleCount + 5)}
+              className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-2xl"
+            >
+              Load More
+            </button>
           </div>
         )}
       </div>
