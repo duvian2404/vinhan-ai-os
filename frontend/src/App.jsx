@@ -8,7 +8,7 @@ function App() {
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
   const [editingId, setEditingId] = useState(null);
-  const [search, setSearch] = useState("");
+  // const [search, setSearch] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [articleUrl, setArticleUrl] = useState("");
   const [cachedResult, setCachedResult] = useState(false);
@@ -113,6 +113,7 @@ function App() {
     });
     fetchSummaries();
   };
+
   // Lọc summaries dựa trên search query
   // const filteredSummaries = summaries.filter(
   //   (summary) =>
@@ -252,27 +253,29 @@ function App() {
                 </div>
               )}
               {user && (
-                <div className="bg-green-900 p-6 rounded-2xl mb-6">
-                  <h2 className="text-2xl font-bold mb-2">Logged In 😄</h2>
+                <div className=" bg-green-900 p-6 rounded-2xl mb-6 flex items-center">
+                  <h2 className="text-blue-400 text-2xl font-bold mb-2">
+                    Logged In 😄
+                  </h2>
 
                   <p>Welcome {user.email}</p>
+                  <button
+                    onClick={logout}
+                    className=" ml-auto text-white bg-yellow-600 px-4 py-2 rounded-xl hover:bg-yellow-300 transition  font-semibold"
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
-              <button
-                onClick={logout}
-                className=" text-white bg-yellow-600 px-4 py-2 rounded-xl hover:bg-yellow-500 transition px-6 py-3 rounded-xl font-semibold"
-              >
-                Logout
-              </button>
             </div>
             <div className="mb-8">
-              <input
+              {/* <input
                 type="text"
                 placeholder="Search summaries..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl outline-none focus:border-blue-500"
-              />
+              /> */}
 
               <div className="grid grid-cols-3 gap-4 mb-8">
                 <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
