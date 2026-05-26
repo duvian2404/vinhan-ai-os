@@ -12,15 +12,21 @@ function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [articleUrl, setArticleUrl] = useState("");
   const [cachedResult, setCachedResult] = useState(false);
-
   const [selectedTag, setSelectedTag] = useState("");
-
   const [rssEnabled, setRssEnabled] = useState(false);
-
   const [rssFeedUrl, setRssFeedUrl] = useState("");
-
   const [visibleCount, setVisibleCount] = useState(5);
 
+  const [email, setEmail] = useState("");
+
+  const [password, setPassword] = useState("");
+
+  const [user, setUser] = useState(null);
+  {
+    user && <p className="mb-4">Welcome {user.email}</p>;
+  }
+  //=========================API Endpoints=========================
+  // API endpoint cho lấy tất cả summaries
   const fetchSummaries = () => {
     fetch("http://localhost:3000/api/summaries")
       .then((res) => res.json())
@@ -29,6 +35,7 @@ function App() {
         setLoading(false);
       });
   };
+
   // tao filter summaries
   const filteredSummaries = selectedTag
     ? summaries.filter((summary) => summary.tags?.includes(selectedTag))
@@ -36,7 +43,7 @@ function App() {
 
   // API endpoint cho lấy tất cả summaries
   useEffect(() => {
-    fetchSummaries();
+    // API endpoint cho lấy cấu hình RSS
     const fetchRssConfig = async () => {
       const response = await axios.get("http://localhost:3000/api/rss-config");
 
@@ -44,20 +51,43 @@ function App() {
 
       setRssFeedUrl(response.data.rssFeedUrl);
     };
+    // API endpoint cho auto-login
+    const autoLogin = async () => {
+      const token = localStorage.getItem("token");
 
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await axios.get("http://localhost:3000/api/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setUser(response.data.user);
+
+        console.log("✅ Auto login success");
+      } catch (error) {
+        console.log(error);
+
+        localStorage.removeItem("token");
+      }
+    };
+    fetchSummaries();
+    autoLogin();
     fetchRssConfig();
   }, []);
 
-  // API endpoint cho tạo summary mới
+  // API endpoint cho tạo mới hoặc cập nhật summary
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const url = editingId
       ? `http://localhost:3000/api/summaries/${editingId}`
       : "http://localhost:3000/api/summaries";
-
     const method = editingId ? "PUT" : "POST";
-
     await fetch(url, {
       method,
       headers: {
@@ -69,12 +99,10 @@ function App() {
         source,
       }),
     });
-
     setTitle("");
     setContent("");
     setSource("");
     setEditingId(null);
-
     fetchSummaries();
   };
 
@@ -92,7 +120,7 @@ function App() {
   //     summary.content.toLowerCase().includes(search.toLowerCase()),
   // );
 
-  // API endpoint cho AI summary từ content
+  // API endpoint cho AI-summary từ content
   const handleAISummary = async () => {
     try {
       setAiLoading(true);
@@ -114,7 +142,7 @@ function App() {
     }
   };
 
-  // API endpoint cho lấy tất cả summaries
+  // API endpoint cho AI-summary từ URL
   const handleArticleSummary = async () => {
     try {
       setAiLoading(true);
@@ -143,8 +171,8 @@ function App() {
       setAiLoading(false);
     }
   };
-  //-----------
 
+  // API endpoint cho lưu cấu hình RSS
   const saveRssConfig = async () => {
     await axios.post("http://localhost:3000/api/rss-config", {
       enabled: rssEnabled,
@@ -154,6 +182,37 @@ function App() {
     alert("RSS Config Saved 😄");
   };
 
+  // API endpoint cho login
+  const login = async () => {
+    try {
+      const response = await axios.post("http://localhost:3000/api/login", {
+        email,
+        password,
+      });
+
+      const token = response.data.token;
+
+      // SAVE TOKEN
+      localStorage.setItem("token", token);
+
+      // SAVE USER
+      setUser(response.data.user);
+
+      alert("Login success 😄");
+    } catch (error) {
+      console.log(error);
+
+      alert("Login failed 😢");
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+
+    setUser(null);
+
+    alert("Logged out 😄");
+  };
   //===================Hien thi ra Browser=================
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
@@ -163,6 +222,49 @@ function App() {
 
           <p className="text-zinc-400 text-lg">
             AI-powered summaries dashboard
+            <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
+              {!user && (
+                <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
+                  <h2 className="text-2xl font-bold mb-4">Login</h2>
+
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
+                  />
+
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
+                  />
+
+                  <button
+                    onClick={login}
+                    className="text-white bg-blue-600 px-5 py-3 rounded-xl"
+                  >
+                    Login
+                  </button>
+                </div>
+              )}
+              {user && (
+                <div className="bg-green-900 p-6 rounded-2xl mb-6">
+                  <h2 className="text-2xl font-bold mb-2">Logged In 😄</h2>
+
+                  <p>Welcome {user.email}</p>
+                </div>
+              )}
+              <button
+                onClick={logout}
+                className=" text-white bg-yellow-600 px-4 py-2 rounded-xl hover:bg-yellow-500 transition px-6 py-3 rounded-xl font-semibold"
+              >
+                Logout
+              </button>
+            </div>
             <div className="mb-8">
               <input
                 type="text"
@@ -255,7 +357,7 @@ function App() {
             </button>
           </div>
         </div>
-
+        {/* form chính */}
         <form
           onSubmit={handleSubmit}
           className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8 space-y-4"
@@ -325,7 +427,7 @@ function App() {
             </div>
           </button>
         </form>
-
+        {/* load du liệu */}
         {loading ? (
           <p className="text-zinc-400">Loading...</p>
         ) : summaries.length === 0 ? (
@@ -344,20 +446,23 @@ function App() {
                   {summary.tags?.split(",").map((tag, index) => (
                     <button
                       key={index}
-                      onClick={() => setSelectedTag(tag.trim())}
+                      onClick={() => {
+                        setSelectedTag(tag.trim());
+                        setVisibleCount(3);
+                      }}
                       className="bg-purple-500/20 hover:bg-purple-500/40 transition text-purple-300 px-3 py-1 rounded-full text-sm"
                     >
                       #{tag.trim()}
                     </button>
                   ))}
                 </div>
-
+                {/* load title */}
                 <h2 className="text-2xl font-bold mb-3">{summary.title}</h2>
-
+                {/* load content */}
                 <p className="text-zinc-300 mb-5 leading-relaxed">
                   {summary.content}
                 </p>
-
+                {/* load source */}
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-500 text-sm">
                     {summary.source}
@@ -370,7 +475,7 @@ function App() {
                       🔗 Read Original Article
                     </a>
                   </span>
-
+                  {/* load actions */}
                   <div className="flex gap-3">
                     <button
                       onClick={() => {
@@ -397,10 +502,11 @@ function App() {
             ))}
           </div>
         )}
+        {/* load more button */}
         {visibleCount < filteredSummaries.length && (
           <div className="mt-8 text-center">
             <button
-              onClick={() => setVisibleCount(visibleCount + 5)}
+              onClick={() => setVisibleCount(visibleCount + 3)}
               className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-2xl"
             >
               Load More
