@@ -151,12 +151,12 @@ app.get("/api/summaries", authMiddleware, async (req, res) => {
 // API endpoint cho tạo summary mới
 app.post("/api/summaries", authMiddleware, async (req, res) => {
   try {
-    const { title, content, source } = req.body;
+    const { title, content, source, tags } = req.body;
 
     const result = await pool.query(
       `
       INSERT INTO summaries (title, content, source,tags, user_id)
-      VALUES ($1, $2, $3)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
       `,
       [title, content, source, tags, req.user.id],
@@ -177,16 +177,16 @@ app.post("/api/summaries", authMiddleware, async (req, res) => {
 });
 
 // API endpoint cho xóa summary
-app.delete("/api/summaries/:id", async (req, res) => {
+app.delete("/api/summaries/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-
+    console.log("Deleting summary with ID:", id, "for user ID:", req.user.id);
     await pool.query(
       `
       DELETE FROM summaries
-      WHERE id = $1
+      WHERE id = $1 AND user_id = $2
       `,
-      [id],
+      [id, req.user.id],
     );
     console.log("xoa!");
     res.json({
@@ -204,7 +204,7 @@ app.delete("/api/summaries/:id", async (req, res) => {
 });
 
 // API endpoint cho cập nhật summary
-app.put("/api/summaries/:id", async (req, res) => {
+app.put("/api/summaries/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content, source } = req.body;
@@ -655,6 +655,37 @@ app.get("/api/profile", (req, res) => {
 
     res.status(401).json({
       error: "Invalid token",
+    });
+  }
+});
+
+app.post("/api/register", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await pool.query(
+      `
+        INSERT INTO users
+        (
+          email,
+          password
+        )
+
+        VALUES ($1, $2)
+        `,
+      [email, hashedPassword],
+    );
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: "Register failed",
     });
   }
 });

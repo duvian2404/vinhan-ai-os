@@ -3,7 +3,7 @@ import axios from "axios";
 // Main App component
 function App() {
   const [summaries, setSummaries] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
@@ -25,6 +25,7 @@ function App() {
   {
     user && <p className="mb-4">Welcome {user.email}</p>;
   }
+
   //=========================API Endpoints=========================
   // API endpoint cho lấy tất cả summaries
   // const fetchSummaries = () => {
@@ -50,8 +51,9 @@ function App() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response.data);
+
       setSummaries(response.data.data);
+      console.log(response.data);
       console.log("Summaries:", response.data.data);
     } catch (error) {
       console.log(error);
@@ -91,7 +93,7 @@ function App() {
         });
 
         setUser(response.data.user);
-        //fetchSummaries();
+        await fetchSummaries();
 
         console.log("✅ Auto login success");
       } catch (error) {
@@ -136,6 +138,10 @@ function App() {
   const handleDelete = async (id) => {
     await fetch(`http://localhost:3000/api/summaries/${id}`, {
       method: "DELETE",
+
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
     });
     fetchSummaries();
   };
@@ -149,8 +155,8 @@ function App() {
 
   // API endpoint cho AI-summary từ content
   const handleAISummary = async () => {
+    setAiLoading(true);
     try {
-      setAiLoading(true);
       const response = await fetch("http://localhost:3000/api/ai-summary", {
         method: "POST",
         headers: {
@@ -172,8 +178,8 @@ function App() {
 
   // API endpoint cho AI-summary từ URL
   const handleArticleSummary = async () => {
+    setAiLoading(true);
     try {
-      setAiLoading(true);
       const response = await fetch(
         "http://localhost:3000/api/article-summary",
         {
@@ -234,14 +240,31 @@ function App() {
       alert("Login failed 😢");
     }
   };
-
+  // API endpoint cho logout
   const logout = () => {
     localStorage.removeItem("token");
 
     setUser(null);
 
     alert("Logged out 😄");
+    setSummaries([]);
   };
+
+  // API endpoint cho register
+  const register = async () => {
+    try {
+      await axios.post("http://localhost:3000/api/register", {
+        email,
+        password,
+      });
+
+      alert("Registration successful 😄");
+    } catch (error) {
+      console.log(error);
+      alert("Registration failed 😢");
+    }
+  };
+
   //===================Hien thi ra Browser=================
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
@@ -277,6 +300,13 @@ function App() {
                     className="text-white bg-blue-600 px-5 py-3 rounded-xl"
                   >
                     Login
+                  </button>
+
+                  <button
+                    onClick={register}
+                    className="text-white bg-green-600 px-5 py-3 rounded-xl, ml-4 "
+                  >
+                    Register
                   </button>
                 </div>
               )}
