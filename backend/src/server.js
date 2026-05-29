@@ -32,6 +32,31 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Middleware để bảo vệ các route cần authentication
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  console.log(req.user);
+  if (!authHeader) {
+    return res.status(401).json({
+      error: "No token",
+    });
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    req.user = decoded;
+    console.log(req.user);
+    next();
+  } catch (error) {
+    console.log(error);
+
+    res.status(401).json({
+      error: "Invalid token",
+    });
+  }
+};
+
 //const PORT = 3000;
 const PORT = process.env.PORT || 3000;
 
@@ -97,14 +122,18 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 // API endpoint cho lấy tất cả summaries
-app.get("/api/summaries", async (req, res) => {
+app.get("/api/summaries", authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       SELECT *
       FROM summaries
-      ORDER BY created_at DESC
-    `);
-
+      WHERE user_id = $1
+      ORDER BY id DESC
+    `,
+      [req.user.id],
+    );
+    //console.log("Ở đây nè:", result.rows);
     res.json({
       success: true,
       data: result.rows,
@@ -120,17 +149,17 @@ app.get("/api/summaries", async (req, res) => {
 });
 
 // API endpoint cho tạo summary mới
-app.post("/api/summaries", async (req, res) => {
+app.post("/api/summaries", authMiddleware, async (req, res) => {
   try {
     const { title, content, source } = req.body;
 
     const result = await pool.query(
       `
-      INSERT INTO summaries (title, content, source)
+      INSERT INTO summaries (title, content, source,tags, user_id)
       VALUES ($1, $2, $3)
       RETURNING *
       `,
-      [title, content, source],
+      [title, content, source, tags, req.user.id],
     );
 
     res.status(201).json({
@@ -208,21 +237,21 @@ app.put("/api/summaries/:id", async (req, res) => {
 
 //===================API endpoint cho article summary=================
 
-app.post("/api/article-summary", async (req, res) => {
+app.post("/api/article-summary", authMiddleware, async (req, res) => {
   // Tách logic xử lý article summary ra một hàm riêng để có thể tái sử dụng cho cả API endpoint và RSS import
 
   try {
     const { url } = req.body;
 
-    //const article = await processArticle(url);
+    const article = await processArticle(url, req.user.id);
     // Kiểm tra nếu đã có summary cho URL này trong DB
     const existingSummary = await pool.query(
       `
           SELECT * FROM summaries
-          WHERE source = $1
+          WHERE source = $1 AND user_id = $2
           LIMIT 1
           `,
-      [url],
+      [url, req.user.id],
     );
     // Nếu đã có thì trả về luôn, không cần gọi Gemini nữa
     if (existingSummary.rows.length > 0) {
@@ -291,10 +320,10 @@ app.post("/api/article-summary", async (req, res) => {
     await pool.query(
       `
       INSERT INTO summaries
-      (title, content, source, tags)
-      VALUES ($1, $2, $3, $4)
+      (title, content, source, tags, user_id)
+      VALUES ($1, $2, $3, $4, $5)
       `,
-      [aiTitle, summary, url, tags],
+      [aiTitle, summary, url, tags, req.user.id],
     );
     console.log("SAVED!");
 
@@ -314,7 +343,7 @@ app.post("/api/article-summary", async (req, res) => {
   }
 });
 //====================API endpoint cho test RSS feed=================
-app.get("/api/rss-test", async (req, res) => {
+app.get("/api/rss-test", authMiddleware, async (req, res) => {
   try {
     const feed = await rssFeedUrl;
 
@@ -388,7 +417,7 @@ async function importRSS() {
   }
 }
 // Hàm xử lý tóm tắt bài viết từ URL, có kiểm tra cache trước khi gọi Gemini
-async function processArticle(url) {
+async function processArticle(url, userId) {
   const existingSummary = await pool.query(
     `
           SELECT * FROM summaries

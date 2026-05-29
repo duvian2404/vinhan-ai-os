@@ -8,7 +8,7 @@ function App() {
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
   const [editingId, setEditingId] = useState(null);
-  // const [search, setSearch] = useState("");
+  //const [search, setSearch] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [articleUrl, setArticleUrl] = useState("");
   const [cachedResult, setCachedResult] = useState(false);
@@ -27,13 +27,35 @@ function App() {
   }
   //=========================API Endpoints=========================
   // API endpoint cho lấy tất cả summaries
-  const fetchSummaries = () => {
-    fetch("http://localhost:3000/api/summaries")
-      .then((res) => res.json())
-      .then((data) => {
-        setSummaries(data.data);
-        setLoading(false);
+  // const fetchSummaries = () => {
+  //   fetch("http://localhost:3000/api/summaries")
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       setSummaries(data.data);
+  //       setLoading(false);
+  //     });
+  // };
+  ///
+
+  const fetchSummaries = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      const response = await axios.get("http://localhost:3000/api/summaries", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      console.log(response.data);
+      setSummaries(response.data.data);
+      console.log("Summaries:", response.data.data);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   // tao filter summaries
@@ -42,6 +64,7 @@ function App() {
     : summaries;
 
   // API endpoint cho lấy tất cả summaries
+
   useEffect(() => {
     // API endpoint cho lấy cấu hình RSS
     const fetchRssConfig = async () => {
@@ -51,6 +74,7 @@ function App() {
 
       setRssFeedUrl(response.data.rssFeedUrl);
     };
+
     // API endpoint cho auto-login
     const autoLogin = async () => {
       const token = localStorage.getItem("token");
@@ -67,6 +91,7 @@ function App() {
         });
 
         setUser(response.data.user);
+        //fetchSummaries();
 
         console.log("✅ Auto login success");
       } catch (error) {
@@ -75,7 +100,7 @@ function App() {
         localStorage.removeItem("token");
       }
     };
-    fetchSummaries();
+    //fetchSummaries();
     autoLogin();
     fetchRssConfig();
   }, []);
@@ -92,6 +117,7 @@ function App() {
       method,
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
       body: JSON.stringify({
         title,
@@ -129,6 +155,7 @@ function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           content,
@@ -153,6 +180,7 @@ function App() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
             url: articleUrl,
@@ -198,7 +226,7 @@ function App() {
 
       // SAVE USER
       setUser(response.data.user);
-
+      fetchSummaries();
       alert("Login success 😄");
     } catch (error) {
       console.log(error);
@@ -221,7 +249,7 @@ function App() {
         <div className="mb-10">
           <h1 className="text-5xl font-bold mb-3">VinhAn-ai-os 🚀</h1>
 
-          <p className="text-zinc-400 text-lg">
+          <span className="text-zinc-400 text-lg">
             AI-powered summaries dashboard
             <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
               {!user && (
@@ -299,7 +327,7 @@ function App() {
                 </div>
               </div>
             </div>
-          </p>
+          </span>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8">
@@ -408,27 +436,27 @@ function App() {
             onChange={(e) => setSource(e.target.value)}
             className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-blue-500"
           />
-          <button
+          {/* <button
             type="submit"
             className="bg-blue-600 hover:bg-blue-500 transition px-6 py-3 rounded-xl font-semibold"
-          >
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleAISummary}
-                className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-xl font-semibold"
-              >
-                {aiLoading ? "Generating..." : "Generate AI Summary"}
-              </button>
+          > */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleAISummary}
+              className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-xl font-semibold"
+            >
+              {aiLoading ? "Generating..." : "Generate AI Summary"}
+            </button>
 
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-500 transition px-6 py-3 rounded-xl font-semibold"
-              >
-                {editingId ? "Update Summary" : "Save Summary"}
-              </button>
-            </div>
-          </button>
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-500 transition px-6 py-3 rounded-xl font-semibold"
+            >
+              {editingId ? "Update Summary" : "Save Summary"}
+            </button>
+          </div>
+          {/* </button> */}
         </form>
         {/* load du liệu */}
         {loading ? (
