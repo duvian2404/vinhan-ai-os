@@ -661,12 +661,24 @@ app.get("/api/profile", (req, res) => {
 
 app.post("/api/register", async (req, res) => {
   const { email, password } = req.body;
-
+  console.log(req.body);
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    await pool.query(
+    const existingUser = await pool.query(
       `
+    SELECT *
+    FROM users
+    WHERE email = $1
+    `,
+      [email],
+    );
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        error: "Email already exists",
+      });
+
+      await pool.query(
+        `
         INSERT INTO users
         (
           email,
@@ -675,9 +687,9 @@ app.post("/api/register", async (req, res) => {
 
         VALUES ($1, $2)
         `,
-      [email, hashedPassword],
-    );
-
+        [email, hashedPassword],
+      );
+    }
     res.json({
       success: true,
     });

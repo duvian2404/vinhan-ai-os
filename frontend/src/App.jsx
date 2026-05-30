@@ -18,14 +18,13 @@ function App() {
   const [visibleCount, setVisibleCount] = useState(5);
 
   const [email, setEmail] = useState("");
-
   const [password, setPassword] = useState("");
-
   const [user, setUser] = useState(null);
   {
     user && <p className="mb-4">Welcome {user.email}</p>;
   }
 
+  //const [Register, setRegister] = useState(null);
   //=========================API Endpoints=========================
   // API endpoint cho lấy tất cả summaries
   // const fetchSummaries = () => {
@@ -244,14 +243,19 @@ function App() {
   const logout = () => {
     localStorage.removeItem("token");
 
-    setUser(null);
-
     alert("Logged out 😄");
+    setUser(null);
     setSummaries([]);
+    setEmail("");
+    setPassword("");
+    setContent("");
+    setTitle("");
+    setSource("");
+    setArticleUrl;
   };
 
   // API endpoint cho register
-  const register = async () => {
+  const Register = async () => {
     try {
       await axios.post("http://localhost:3000/api/register", {
         email,
@@ -261,7 +265,7 @@ function App() {
       alert("Registration successful 😄");
     } catch (error) {
       console.log(error);
-      alert("Registration failed 😢");
+      alert("Registration failed hoặc email đã tồn tại 😢");
     }
   };
 
@@ -301,13 +305,6 @@ function App() {
                   >
                     Login
                   </button>
-
-                  <button
-                    onClick={register}
-                    className="text-white bg-green-600 px-5 py-3 rounded-xl, ml-4 "
-                  >
-                    Register
-                  </button>
                 </div>
               )}
               {user && (
@@ -325,6 +322,34 @@ function App() {
                   </button>
                 </div>
               )}
+            </div>
+            <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
+              <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
+                <h2 className="text-2xl font-bold mb-4">Register</h2>
+
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
+                />
+
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
+                />
+
+                <button
+                  onClick={Register}
+                  className="text-white bg-green-600 px-5 py-3 rounded-xl, ml-4 "
+                >
+                  Register
+                </button>
+              </div>
             </div>
             <div className="mb-8">
               {/* <input
