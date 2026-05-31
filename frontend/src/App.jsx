@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_URL, getAuthHeaders } from "./api";
+import { fetchSummariesAPI } from "./services/summaryService";
+import { handleSubmitAPI } from "./services/summaryService";
+import { handleDeleteAPI } from "./services/summaryService";
+import { loginAPI } from "./services/authService";
+import { logoutAPI } from "./services/authService";
+import { registerAPI } from "./services/authService";
+import { handleAISummaryAPI } from "./services/aiService";
+import { handleArticleSummaryAPI } from "./services/aiService";
+
 // Main App component
 function App() {
   const [summaries, setSummaries] = useState([]);
@@ -20,40 +30,32 @@ function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
-  {
-    user && <p className="mb-4">Welcome {user.email}</p>;
-  }
+  // {
+  //   user && <p className="mb-4">Welcome {user.email}</p>;
+  // }
+  //===================API Calls=================
+  // const fetchSummaries = async () => {
+  //   const token = localStorage.getItem("token");
 
-  //const [Register, setRegister] = useState(null);
-  //=========================API Endpoints=========================
-  // API endpoint cho lấy tất cả summaries
-  // const fetchSummaries = () => {
-  //   fetch("http://localhost:3000/api/summaries")
-  //     .then((res) => res.json())
-  //     .then((data) => {
-  //       setSummaries(data.data);
-  //       setLoading(false);
-  //     });
+  //   if (!token) {
+  //     return;
+  //   }
+
+  //   try {
+  //     const response = await axios.get(
+  //       `${API_URL}/api/summaries`,
+  //       getAuthHeaders(),
+  //     );
+  //     setSummaries(response.data.data);
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
   // };
-  ///
-
+  // Tách API call ra thành service riêng để tái sử dụng
   const fetchSummaries = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return;
-    }
-
     try {
-      const response = await axios.get("http://localhost:3000/api/summaries", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setSummaries(response.data.data);
-      console.log(response.data);
-      console.log("Summaries:", response.data.data);
+      const data = await fetchSummariesAPI();
+      setSummaries(data);
     } catch (error) {
       console.log(error);
     }
@@ -65,14 +67,10 @@ function App() {
     : summaries;
 
   // API endpoint cho lấy tất cả summaries
-
   useEffect(() => {
-    // API endpoint cho lấy cấu hình RSS
     const fetchRssConfig = async () => {
-      const response = await axios.get("http://localhost:3000/api/rss-config");
-
+      const response = await axios.get(`${API_URL}/api/rss-config`);
       setRssEnabled(response.data.rssEnabled);
-
       setRssFeedUrl(response.data.rssFeedUrl);
     };
 
@@ -85,11 +83,10 @@ function App() {
       }
 
       try {
-        const response = await axios.get("http://localhost:3000/api/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get(
+          `${API_URL}/api/profile`,
+          getAuthHeaders(),
+        );
 
         setUser(response.data.user);
         await fetchSummaries();
@@ -108,24 +105,14 @@ function App() {
 
   // API endpoint cho tạo mới hoặc cập nhật summary
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    const success = await handleSubmitAPI(e, title, content, source, editingId);
 
-    const url = editingId
-      ? `http://localhost:3000/api/summaries/${editingId}`
-      : "http://localhost:3000/api/summaries";
-    const method = editingId ? "PUT" : "POST";
-    await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        title,
-        content,
-        source,
-      }),
-    });
+    if (!success) {
+      alert("Save failed 😢");
+      return;
+    }
+
+    alert(`Summary ${editingId ? "updated" : "created"} 😄`);
     setTitle("");
     setContent("");
     setSource("");
@@ -134,15 +121,26 @@ function App() {
   };
 
   // API endpoint cho xóa summary
-  const handleDelete = async (id) => {
-    await fetch(`http://localhost:3000/api/summaries/${id}`, {
-      method: "DELETE",
+  // const handleDelete = async (id) => {
+  //   await fetch(`${API_URL}/api/summaries/${id}`, {
+  //     ...getAuthHeaders(),
+  //     method: "DELETE",
+  //   });
 
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+  const handleDelete = async (id) => {
+    const success = await handleDeleteAPI(id);
+
+    if (!success) {
+      alert("Delete failed 😢");
+      return;
+    }
+    alert("Summary deleted 😄");
     fetchSummaries();
+    setSelectedTag("");
+    setArticleUrl("");
+    setContent("");
+    setTitle("");
+    setSource("");
   };
 
   // Lọc summaries dựa trên search query
@@ -153,21 +151,29 @@ function App() {
   // );
 
   // API endpoint cho AI-summary từ content
+  // const handleAISummary = async () => {
+  //   setAiLoading(true);
+  //   try {
+  //     const response = await fetch(`${API_URL}/api/ai-summary`, {
+  //       ...getAuthHeaders(),
+  //       method: "POST",
+  //       body: JSON.stringify({
+  //         content,
+  //       }),
+  //     });
+  //     const data = await response.json();
+  //     setContent(data.summary);
+  //     setAiLoading(false);
+  //   } catch (error) {
+  //     console.error(error);
+  //     setAiLoading(false);
+  //   }
+  // };
   const handleAISummary = async () => {
     setAiLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/api/ai-summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          content,
-        }),
-      });
-      const data = await response.json();
-      setContent(data.summary);
+      const summary = await handleAISummaryAPI(content);
+      setContent(summary);
       setAiLoading(false);
     } catch (error) {
       console.error(error);
@@ -176,23 +182,33 @@ function App() {
   };
 
   // API endpoint cho AI-summary từ URL
+  // const handleArticleSummary = async () => {
+  //   setAiLoading(true);
+  //   try {
+  //     const response = await fetch(`${API_URL}/api/article-summary`, {
+  //       ...getAuthHeaders(),
+  //       method: "POST",
+  //       body: JSON.stringify({
+  //         url: articleUrl,
+  //       }),
+  //     });
+  //     const data = await response.json();
+  //     // Lưu trạng thái cache vào state
+  //     setCachedResult(data.cached || false);
+  //     setContent(data.summary);
+  //     setTitle(data.title);
+  //     setSource(articleUrl);
+  //     fetchSummaries();
+  //     setAiLoading(false);
+  //   } catch (error) {
+  //     console.error(error);
+  //     setAiLoading(false);
+  //   }
+  // };
   const handleArticleSummary = async () => {
     setAiLoading(true);
     try {
-      const response = await fetch(
-        "http://localhost:3000/api/article-summary",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({
-            url: articleUrl,
-          }),
-        },
-      );
-      const data = await response.json();
+      const data = await handleArticleSummaryAPI(articleUrl);
       // Lưu trạng thái cache vào state
       setCachedResult(data.cached || false);
       setContent(data.summary);
@@ -208,7 +224,8 @@ function App() {
 
   // API endpoint cho lưu cấu hình RSS
   const saveRssConfig = async () => {
-    await axios.post("http://localhost:3000/api/rss-config", {
+    await axios.post(`${API_URL}/api/rss-config`, {
+      ...getAuthHeaders(),
       enabled: rssEnabled,
       feedUrl: rssFeedUrl,
     });
@@ -217,32 +234,49 @@ function App() {
   };
 
   // API endpoint cho login
+  // const login = async () => {
+  //   try {
+  //     const response = await axios.post(`${API_URL}/api/login`, {
+  //       email,
+  //       password,
+  //     });
+
+  //     const token = response.data.token;
+
+  //     // SAVE TOKEN
+  //     localStorage.setItem("token", token);
+
+  //     // SAVE USER
+  //     setUser(response.data.user);
+  //     fetchSummaries();
+  //     alert("Login success 😄");
+  //   } catch (error) {
+  //     console.log(error);
+
+  //     alert("Login failed 😢");
+  //   }
+  // };
+  //
   const login = async () => {
     try {
-      const response = await axios.post("http://localhost:3000/api/login", {
-        email,
-        password,
-      });
-
-      const token = response.data.token;
-
-      // SAVE TOKEN
-      localStorage.setItem("token", token);
-
-      // SAVE USER
-      setUser(response.data.user);
+      const data = await loginAPI(email, password);
+      setUser(data.user);
       fetchSummaries();
       alert("Login success 😄");
     } catch (error) {
       console.log(error);
-
       alert("Login failed 😢");
     }
   };
+
   // API endpoint cho logout
   const logout = () => {
-    localStorage.removeItem("token");
+    const success = logoutAPI();
 
+    if (!success) {
+      alert("Logout failed 😢");
+      return;
+    }
     alert("Logged out 😄");
     setUser(null);
     setSummaries([]);
@@ -255,16 +289,26 @@ function App() {
   };
 
   // API endpoint cho register
+  // const Register = async () => {
+  //   try {
+  //     await axios.post(`${API_URL}/api/register`, {
+  //       email,
+  //       password,
+  //     });
+
+  //     alert("Registration successful 😄");
+  //   } catch (error) {
+  //     console.log(error);
+  //     alert("Registration failed hoặc email đã tồn tại 😢");
+  //   }
+  // };
+  //
   const Register = async () => {
     try {
-      await axios.post("http://localhost:3000/api/register", {
-        email,
-        password,
-      });
-
+      await registerAPI(email, password);
       alert("Registration successful 😄");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       alert("Registration failed hoặc email đã tồn tại 😢");
     }
   };

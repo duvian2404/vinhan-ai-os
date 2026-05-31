@@ -22,7 +22,7 @@ const cron = require("node-cron");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-//=============== Middleware =================
+//
 app.use(cors());
 app.use(express.json());
 app.get("/api/health", (req, res) => {
@@ -152,7 +152,16 @@ app.get("/api/summaries", authMiddleware, async (req, res) => {
 app.post("/api/summaries", authMiddleware, async (req, res) => {
   try {
     const { title, content, source, tags } = req.body;
+    console.log(req.body);
 
+    console.log(
+      "Creating summary for user ID:",
+      req.user.id,
+      title,
+      content,
+      source,
+      tags,
+    );
     const result = await pool.query(
       `
       INSERT INTO summaries (title, content, source,tags, user_id)
@@ -242,7 +251,7 @@ app.post("/api/article-summary", authMiddleware, async (req, res) => {
 
   try {
     const { url } = req.body;
-
+    console.log("BODY:", req.body);
     const article = await processArticle(url, req.user.id);
     // Kiểm tra nếu đã có summary cho URL này trong DB
     const existingSummary = await pool.query(
