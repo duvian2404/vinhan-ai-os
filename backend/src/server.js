@@ -89,6 +89,7 @@ app.post("/api/ai-summary", async (req, res) => {
       success: true,
       summary,
     });
+    con;
   } catch (error) {
     console.error(error);
 
@@ -251,8 +252,7 @@ app.post("/api/article-summary", authMiddleware, async (req, res) => {
 
   try {
     const { url } = req.body;
-    console.log("BODY:", req.body);
-    const article = await processArticle(url, req.user.id);
+
     // Kiểm tra nếu đã có summary cho URL này trong DB
     const existingSummary = await pool.query(
       `
@@ -264,83 +264,95 @@ app.post("/api/article-summary", authMiddleware, async (req, res) => {
     );
     // Nếu đã có thì trả về luôn, không cần gọi Gemini nữa
     if (existingSummary.rows.length > 0) {
+      const result = existingSummary.rows[0];
       return res.json({
         success: true,
         summary: existingSummary.rows[0].content,
         cached: true,
       });
     }
-    // Fetch webpage
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-      },
-    });
+    {
+      const article = await processArticle(url, req.user.id);
+    }
+    // // Fetch webpage
+    // const response = await axios.get(url, {
+    //   headers: {
+    //     "User-Agent":
+    //       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    //   },
+    // });
 
-    // Load HTML
-    const $ = cheerio.load(response.data);
-    // Extract paragraphs
-    let articleText = "";
-    $("p").each((i, el) => {
-      articleText += $(el).text() + "\n";
-    });
-    articleText = articleText.slice(0, 5000);
+    // // Load HTML
+    // const $ = cheerio.load(response.data);
+    // // Extract paragraphs
+    // let articleText = "";
+    // $("p").each((i, el) => {
+    //   articleText += $(el).text() + "\n";
+    // });
+    // articleText = articleText.slice(0, 5000);
 
-    // Gemini model
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview",
-    });
-    // Generate summary
-    const result = await model.generateContent(
-      `
-          Hãy đọc bài viết sau và trả về:
+    // // Gemini model
+    // const model = genAI.getGenerativeModel({
+    //   model: "gemini-3-flash-preview",
+    // });
+    // // Generate summary
+    // const result = await model.generateContent(
+    //   `
+    //       Hãy đọc bài viết sau và trả về:
 
-          1. Tiêu đề ngắn gọn bằng tiếng Việt
-          2. Bản tóm tắt rõ ràng bằng tiếng Việt
-          3. 3 đến 5 tags liên quan
+    //       1. Tiêu đề ngắn gọn bằng tiếng Việt
+    //       2. Bản tóm tắt rõ ràng bằng tiếng Việt
+    //       3. 3 đến 5 tags liên quan
 
-          Format trả về:
+    //       Format trả về:
 
-          TITLE:
-          ...
+    //       TITLE:
+    //       ...
 
-          SUMMARY:
-          ...
+    //       SUMMARY:
+    //       ...
 
-          TAGS:
-          AI, OpenAI, Coding
-          Bài viết:
+    //       TAGS:
+    //       AI, OpenAI, Coding
+    //       Bài viết:
 
-          ${articleText}
-          `,
-    );
+    //       ${articleText}
+    //       `,
+    // );
 
-    // Lấy response từ Gemini
-    const aiResponse = await result.response;
-    const fullText = aiResponse.text();
-    const titleMatch = fullText.match(/TITLE:\s*(.*)/);
-    const summaryMatch = fullText.match(/SUMMARY:\s*([\s\S]*)/);
-    const aiTitle = titleMatch ? titleMatch[1] : "AI Article Summary";
-    const summary = summaryMatch ? summaryMatch[1] : fullText;
-    const tagsMatch = fullText.match(/TAGS:\s*(.*)/);
-    const tags = tagsMatch ? tagsMatch[1] : "";
-    // Lưu summary vào DB
-    await pool.query(
-      `
-      INSERT INTO summaries
-      (title, content, source, tags, user_id)
-      VALUES ($1, $2, $3, $4, $5)
-      `,
-      [aiTitle, summary, url, tags, req.user.id],
-    );
-    console.log("SAVED!");
+    // // Lấy response từ Gemini
+    // const aiResponse = await result.response;
+    // const fullText = aiResponse.text();
+    // const titleMatch = fullText.match(/TITLE:\s*(.*)/);
+    // const summaryMatch = fullText.match(/SUMMARY:\s*([\s\S]*)/);
+    // const aiTitle = titleMatch ? titleMatch[1] : "AI Article Summary";
+    // const summary = summaryMatch ? summaryMatch[1] : fullText;
+    // const tagsMatch = fullText.match(/TAGS:\s*(.*)/);
+    // const tags = tagsMatch ? tagsMatch[1] : "";
+    // // Lưu summary vào DB
+    // await pool.query(
+    //   `
+    //   INSERT INTO summaries
+    //   (title, content, source, tags, user_id)
+    //   VALUES ($1, $2, $3, $4, $5)
+    //   `,
+    //   [aiTitle, summary, url, tags, req.user.id],
+    // );
+    // console.log("SAVED!");
 
     res.json({
+      // success: true,
+      // title: aiTitle,
+      // summary: summary,
+      // source: url,
+      // tags,
+      // cached: false,
       success: true,
-      summary,
-      preview: articleText.slice(0, 300),
-      title: aiTitle,
+      summary: article.content,
+      preview: article.content.slice(0, 300),
+      title: article.title,
+      tags: article.tags,
+      source: article.source,
     });
   } catch (error) {
     console.error(error);
@@ -427,22 +439,23 @@ async function importRSS() {
 }
 // Hàm xử lý tóm tắt bài viết từ URL, có kiểm tra cache trước khi gọi Gemini
 async function processArticle(url, userId) {
-  const existingSummary = await pool.query(
-    `
-          SELECT * FROM summaries
-          WHERE source = $1
-          LIMIT 1
-          `,
-    [url],
-  );
-  // Nếu đã có thì trả về luôn, không cần gọi Gemini nữa
-  if (existingSummary.rows.length > 0) {
-    return res.json({
-      success: true,
-      summary: existingSummary.rows[0].content,
-      cached: true,
-    });
-  }
+  // const existingSummary = await pool.query(
+  //   `
+  //         SELECT * FROM summaries
+  //         WHERE source = $1 AND user_id = $2
+  //         LIMIT 1
+  //         `,
+  //   [url, userId],
+  // );
+  // // Nếu đã có thì trả về luôn, không cần gọi Gemini nữa
+  // if (existingSummary.rows.length > 0) {
+  //   const article = existingSummary.rows[0];
+  //   return res.json({
+  //     success: true,
+  //     summary: existingSummary.rows[0].content,
+  //     cached: true,
+  //   });
+  // }
   // Fetch webpage
   const response = await axios.get(url, {
     headers: {
@@ -502,17 +515,18 @@ async function processArticle(url, userId) {
   await pool.query(
     `
       INSERT INTO summaries
-      (title, content, source, tags)
-      VALUES ($1, $2, $3, $4)
+      (title, content, source, tags, user_id)
+      VALUES ($1, $2, $3, $4, $5)
       `,
-    [aiTitle, summary, url, tags],
+    [aiTitle, summary, url, tags, userId],
   );
   console.log("SAVED!");
   return {
     title: aiTitle,
     content: summary,
     source: url,
-    tags,
+    tags: tags,
+    cache: false,
   };
 }
 

@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { API_URL, getAuthHeaders } from "./api";
-import { fetchSummariesAPI } from "./services/summaryService";
-import { handleSubmitAPI } from "./services/summaryService";
-import { handleDeleteAPI } from "./services/summaryService";
-import { loginAPI } from "./services/authService";
-import { logoutAPI } from "./services/authService";
-import { registerAPI } from "./services/authService";
-import { handleAISummaryAPI } from "./services/aiService";
-import { handleArticleSummaryAPI } from "./services/aiService";
+import {
+  fetchSummariesAPI,
+  saveSummaryAPI,
+  deleteSummaryAPI,
+} from "./services/summaryService";
+import { loginAPI, logoutAPI, registerAPI } from "./services/authService";
+import {
+  generateArticleSummaryAPI,
+  generateSummaryAPI,
+} from "./services/aiService";
+
+import AuthSection from "./components/authSection";
+import RSSSettings from "./components/RSSSettings";
 
 // Main App component
 function App() {
@@ -30,28 +35,8 @@ function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
-  // {
-  //   user && <p className="mb-4">Welcome {user.email}</p>;
-  // }
-  //===================API Calls=================
-  // const fetchSummaries = async () => {
-  //   const token = localStorage.getItem("token");
 
-  //   if (!token) {
-  //     return;
-  //   }
-
-  //   try {
-  //     const response = await axios.get(
-  //       `${API_URL}/api/summaries`,
-  //       getAuthHeaders(),
-  //     );
-  //     setSummaries(response.data.data);
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-  // Tách API call ra thành service riêng để tái sử dụng
+  // API endpoint cho lấy tất cả summaries
   const fetchSummaries = async () => {
     try {
       const data = await fetchSummariesAPI();
@@ -60,13 +45,7 @@ function App() {
       console.log(error);
     }
   };
-
-  // tao filter summaries
-  const filteredSummaries = selectedTag
-    ? summaries.filter((summary) => summary.tags?.includes(selectedTag))
-    : summaries;
-
-  // API endpoint cho lấy tất cả summaries
+  //
   useEffect(() => {
     const fetchRssConfig = async () => {
       const response = await axios.get(`${API_URL}/api/rss-config`);
@@ -105,74 +84,31 @@ function App() {
 
   // API endpoint cho tạo mới hoặc cập nhật summary
   const handleSubmit = async (e) => {
-    const success = await handleSubmitAPI(e, title, content, source, editingId);
-
-    if (!success) {
+    e.preventDefault();
+    try {
+      await saveSummaryAPI(e, title, content, source, editingId);
+      alert(`Summary ${editingId ? "updated" : "created"} 😄`);
+      resetForm();
+      setEditingId(null);
+      fetchSummaries();
+    } catch (error) {
+      console.error(error);
       alert("Save failed 😢");
-      return;
     }
-
-    alert(`Summary ${editingId ? "updated" : "created"} 😄`);
-    setTitle("");
-    setContent("");
-    setSource("");
-    setEditingId(null);
-    fetchSummaries();
   };
-
-  // API endpoint cho xóa summary
-  // const handleDelete = async (id) => {
-  //   await fetch(`${API_URL}/api/summaries/${id}`, {
-  //     ...getAuthHeaders(),
-  //     method: "DELETE",
-  //   });
-
+  // API endpoint cho delete summary
   const handleDelete = async (id) => {
-    const success = await handleDeleteAPI(id);
-
-    if (!success) {
-      alert("Delete failed 😢");
-      return;
-    }
+    await deleteSummaryAPI(id);
     alert("Summary deleted 😄");
+    resetForm();
     fetchSummaries();
-    setSelectedTag("");
-    setArticleUrl("");
-    setContent("");
-    setTitle("");
-    setSource("");
   };
-
-  // Lọc summaries dựa trên search query
-  // const filteredSummaries = summaries.filter(
-  //   (summary) =>
-  //     summary.title.toLowerCase().includes(search.toLowerCase()) ||
-  //     summary.content.toLowerCase().includes(search.toLowerCase()),
-  // );
 
   // API endpoint cho AI-summary từ content
-  // const handleAISummary = async () => {
-  //   setAiLoading(true);
-  //   try {
-  //     const response = await fetch(`${API_URL}/api/ai-summary`, {
-  //       ...getAuthHeaders(),
-  //       method: "POST",
-  //       body: JSON.stringify({
-  //         content,
-  //       }),
-  //     });
-  //     const data = await response.json();
-  //     setContent(data.summary);
-  //     setAiLoading(false);
-  //   } catch (error) {
-  //     console.error(error);
-  //     setAiLoading(false);
-  //   }
-  // };
   const handleAISummary = async () => {
     setAiLoading(true);
     try {
-      const summary = await handleAISummaryAPI(content);
+      const summary = await generateSummaryAPI(content);
       setContent(summary);
       setAiLoading(false);
     } catch (error) {
@@ -182,33 +118,10 @@ function App() {
   };
 
   // API endpoint cho AI-summary từ URL
-  // const handleArticleSummary = async () => {
-  //   setAiLoading(true);
-  //   try {
-  //     const response = await fetch(`${API_URL}/api/article-summary`, {
-  //       ...getAuthHeaders(),
-  //       method: "POST",
-  //       body: JSON.stringify({
-  //         url: articleUrl,
-  //       }),
-  //     });
-  //     const data = await response.json();
-  //     // Lưu trạng thái cache vào state
-  //     setCachedResult(data.cached || false);
-  //     setContent(data.summary);
-  //     setTitle(data.title);
-  //     setSource(articleUrl);
-  //     fetchSummaries();
-  //     setAiLoading(false);
-  //   } catch (error) {
-  //     console.error(error);
-  //     setAiLoading(false);
-  //   }
-  // };
   const handleArticleSummary = async () => {
     setAiLoading(true);
     try {
-      const data = await handleArticleSummaryAPI(articleUrl);
+      const data = await generateArticleSummaryAPI(articleUrl);
       // Lưu trạng thái cache vào state
       setCachedResult(data.cached || false);
       setContent(data.summary);
@@ -222,41 +135,25 @@ function App() {
     }
   };
 
+  // tao filter summaries
+  const filteredSummaries = selectedTag
+    ? summaries.filter((summary) => summary.tags?.includes(selectedTag))
+    : summaries;
+
   // API endpoint cho lưu cấu hình RSS
   const saveRssConfig = async () => {
-    await axios.post(`${API_URL}/api/rss-config`, {
+    await axios.post(
+      `${API_URL}/api/rss-config`,
+      {
+        enabled: rssEnabled,
+        feedUrl: rssFeedUrl,
+      },
       ...getAuthHeaders(),
-      enabled: rssEnabled,
-      feedUrl: rssFeedUrl,
-    });
-
+    );
     alert("RSS Config Saved 😄");
   };
 
   // API endpoint cho login
-  // const login = async () => {
-  //   try {
-  //     const response = await axios.post(`${API_URL}/api/login`, {
-  //       email,
-  //       password,
-  //     });
-
-  //     const token = response.data.token;
-
-  //     // SAVE TOKEN
-  //     localStorage.setItem("token", token);
-
-  //     // SAVE USER
-  //     setUser(response.data.user);
-  //     fetchSummaries();
-  //     alert("Login success 😄");
-  //   } catch (error) {
-  //     console.log(error);
-
-  //     alert("Login failed 😢");
-  //   }
-  // };
-  //
   const login = async () => {
     try {
       const data = await loginAPI(email, password);
@@ -278,32 +175,14 @@ function App() {
       return;
     }
     alert("Logged out 😄");
+    resetForm();
     setUser(null);
     setSummaries([]);
     setEmail("");
     setPassword("");
-    setContent("");
-    setTitle("");
-    setSource("");
-    setArticleUrl;
   };
-
   // API endpoint cho register
-  // const Register = async () => {
-  //   try {
-  //     await axios.post(`${API_URL}/api/register`, {
-  //       email,
-  //       password,
-  //     });
-
-  //     alert("Registration successful 😄");
-  //   } catch (error) {
-  //     console.log(error);
-  //     alert("Registration failed hoặc email đã tồn tại 😢");
-  //   }
-  // };
-  //
-  const Register = async () => {
+  const register = async () => {
     try {
       await registerAPI(email, password);
       alert("Registration successful 😄");
@@ -312,7 +191,14 @@ function App() {
       alert("Registration failed hoặc email đã tồn tại 😢");
     }
   };
-
+  // Hàm reset form sau khi tạo/cập nhật summary hoặc logout
+  const resetForm = () => {
+    setTitle("");
+    setContent("");
+    setSource("");
+    setArticleUrl("");
+    setSelectedTag("");
+  };
   //===================Hien thi ra Browser=================
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
@@ -322,7 +208,7 @@ function App() {
 
           <span className="text-zinc-400 text-lg">
             AI-powered summaries dashboard
-            <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
+            {/* <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
               {!user && (
                 <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
                   <h2 className="text-2xl font-bold mb-4">Login</h2>
@@ -349,6 +235,12 @@ function App() {
                   >
                     Login
                   </button>
+                  <button
+                    onClick={register}
+                    className="text-white bg-green-600 px-5 py-3 rounded-xl, ml-4 "
+                  >
+                    Register
+                  </button>
                 </div>
               )}
               {user && (
@@ -366,35 +258,17 @@ function App() {
                   </button>
                 </div>
               )}
-            </div>
-            <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
-              <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
-                <h2 className="text-2xl font-bold mb-4">Register</h2>
-
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
-                />
-
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
-                />
-
-                <button
-                  onClick={Register}
-                  className="text-white bg-green-600 px-5 py-3 rounded-xl, ml-4 "
-                >
-                  Register
-                </button>
-              </div>
-            </div>
+            </div> */}
+            <AuthSection
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              user={user}
+              login={login}
+              logout={logout}
+              register={register}
+            />
             <div className="mb-8">
               {/* <input
                 type="text"
@@ -429,7 +303,7 @@ function App() {
           </span>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8">
+        {/* <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8">
           <h2 className="text-2xl font-bold mb-4">
             Article Intelligence 🤖
             {cachedResult ? (
@@ -451,10 +325,8 @@ function App() {
                 checked={rssEnabled}
                 onChange={(e) => setRssEnabled(e.target.checked)}
               />
-
               <span>Auto RSS Import</span>
             </div>
-
             <input
               type="text"
               value={rssFeedUrl}
@@ -470,28 +342,37 @@ function App() {
               Save RSS Config
             </button>
           </div>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              placeholder="Paste article URL..."
-              value={articleUrl}
-              onChange={(e) => setArticleUrl(e.target.value)}
-              className="flex-1 bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-purple-500"
-            />
-
-            <button
-              onClick={handleArticleSummary}
-              className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-xl font-semibold"
-            >
-              {aiLoading ? "Reading..." : "Summarize URL"}
-            </button>
-          </div>
+        </div> */}
+        <RSSSettings
+          cachedResult={cachedResult}
+          rssEnabled={rssEnabled}
+          setRssEnabled={setRssEnabled}
+          rssFeedUrl={rssFeedUrl}
+          setRssFeedUrl={setRssFeedUrl}
+          saveRssConfig={saveRssConfig}
+        />
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Paste article URL..."
+            value={articleUrl}
+            onChange={(e) => setArticleUrl(e.target.value)}
+            className="flex-1 bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-purple-500"
+          />
+          <button
+            onClick={handleArticleSummary}
+            className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-xl font-semibold"
+          >
+            {aiLoading ? "Reading..." : "Summarize URL"}
+          </button>
         </div>
-        {/* form chính */}
+
         <form
           onSubmit={handleSubmit}
           className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8 space-y-4"
         >
+          {/* form chính */}
+
           <input
             type="text"
             placeholder="Title"

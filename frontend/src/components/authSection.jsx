@@ -1,0 +1,66 @@
+function AuthSection({
+  email,
+  setEmail,
+  password,
+  setPassword,
+  user,
+  login,
+  logout,
+  register,
+}) {
+  return (
+    <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
+      {!user && (
+        <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
+          <h2 className="text-2xl font-bold mb-4">Login</h2>
+
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
+          />
+
+          <button
+            onClick={login}
+            className="text-white bg-blue-600 px-5 py-3 rounded-xl"
+          >
+            Login
+          </button>
+          <button
+            onClick={register}
+            className="text-white bg-green-600 px-5 py-3 rounded-xl ml-4 "
+          >
+            Register
+          </button>
+        </div>
+      )}
+      {user && (
+        <div className=" bg-green-900 p-6 rounded-2xl mb-6 flex items-center">
+          <h2 className="text-blue-400 text-2xl font-bold mb-2">
+            Logged In 😄
+          </h2>
+
+          <p className="ml-4">Welcome {user.email}</p>
+          <button
+            onClick={logout}
+            className=" ml-auto text-white bg-yellow-600 px-4 py-2 rounded-xl hover:bg-yellow-300 transition  font-semibold"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default AuthSection;
