@@ -21,8 +21,8 @@ export const fetchSummariesAPI = async () => {
 };
 
 // API endpoint cho tạo mới hoặc cập nhật summary
-export const saveSummaryAPI = async (e, title, content, source, editingId) => {
-  e.preventDefault();
+export const saveSummaryAPI = async (title, content, source, editingId) => {
+  // e.preventDefault();
   const url = editingId
     ? `${API_URL}/api/summaries/${editingId}`
     : `${API_URL}/api/summaries`;

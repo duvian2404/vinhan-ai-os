@@ -15,6 +15,9 @@ import {
 import AuthSection from "./components/authSection";
 import RSSSettings from "./components/RSSSettings";
 
+import SummaryForm from "./components/summaryFrom";
+import SummaryList from "./components/summaryList";
+
 // Main App component
 function App() {
   const [summaries, setSummaries] = useState([]);
@@ -30,7 +33,7 @@ function App() {
   const [selectedTag, setSelectedTag] = useState("");
   const [rssEnabled, setRssEnabled] = useState(false);
   const [rssFeedUrl, setRssFeedUrl] = useState("");
-  const [visibleCount, setVisibleCount] = useState(5);
+  const [visibleCount, setVisibleCount] = useState(3);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -86,7 +89,12 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await saveSummaryAPI(e, title, content, source, editingId);
+      if (!title || !content || !source) {
+        alert("Please fill in all fields 😢");
+        return;
+      }
+      await saveSummaryAPI(title, content, source, editingId);
+      e.preventDefault();
       alert(`Summary ${editingId ? "updated" : "created"} 😄`);
       resetForm();
       setEditingId(null);
@@ -108,7 +116,13 @@ function App() {
   const handleAISummary = async () => {
     setAiLoading(true);
     try {
+      if (!content) {
+        alert("Please enter content to summarize 😢");
+        setAiLoading(false);
+        return;
+      }
       const summary = await generateSummaryAPI(content);
+
       setContent(summary);
       setAiLoading(false);
     } catch (error) {
@@ -121,6 +135,11 @@ function App() {
   const handleArticleSummary = async () => {
     setAiLoading(true);
     try {
+      if (!articleUrl) {
+        alert("Please enter article URL to summarize 😢");
+        setAiLoading(false);
+        return;
+      }
       const data = await generateArticleSummaryAPI(articleUrl);
       // Lưu trạng thái cache vào state
       setCachedResult(data.cached || false);
@@ -268,15 +287,17 @@ function App() {
               login={login}
               logout={logout}
               register={register}
+              summaries={summaries}
+              filteredSummaries={filteredSummaries}
             />
-            <div className="mb-8">
-              {/* <input
+            {/* <div className="mb-8">
+              <input
                 type="text"
                 placeholder="Search summaries..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-2xl outline-none focus:border-blue-500"
-              /> */}
+              />
 
               <div className="grid grid-cols-3 gap-4 mb-8">
                 <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
@@ -299,7 +320,7 @@ function App() {
                   <h2 className="text-2xl font-bold text-green-400">Online</h2>
                 </div>
               </div>
-            </div>
+            </div> */}
           </span>
         </div>
 
@@ -351,179 +372,39 @@ function App() {
           setRssFeedUrl={setRssFeedUrl}
           saveRssConfig={saveRssConfig}
         />
-        <div className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Paste article URL..."
-            value={articleUrl}
-            onChange={(e) => setArticleUrl(e.target.value)}
-            className="flex-1 bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-purple-500"
-          />
-          <button
-            onClick={handleArticleSummary}
-            className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-xl font-semibold"
-          >
-            {aiLoading ? "Reading..." : "Summarize URL"}
-          </button>
-        </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8 space-y-4"
-        >
-          {/* form chính */}
+        <SummaryForm
+          articleUrl={articleUrl}
+          setArticleUrl={setArticleUrl}
+          handleSubmit={handleSubmit}
+          handleArticleSummary={handleArticleSummary}
+          handleAISummary={handleAISummary}
+          aiLoading={aiLoading}
+          title={title}
+          setTitle={setTitle}
+          content={content}
+          setContent={setContent}
+          source={source}
+          setSource={setSource}
+          editingId={editingId}
+          filteredSummaries={filteredSummaries}
+          selectedTag={selectedTag}
+          setSelectedTag={setSelectedTag}
+        />
 
-          <input
-            type="text"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-blue-500"
-          />
-
-          {selectedTag && (
-            <div className="mb-6 flex items-center gap-3 bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl">
-              <span className="text-zinc-400">Showing</span>
-
-              <span className="font-bold text-purple-400">
-                {filteredSummaries.length}
-              </span>
-
-              <span className="text-zinc-400">articles for</span>
-
-              <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full">
-                #{selectedTag}
-              </span>
-
-              <button
-                onClick={() => setSelectedTag("")}
-                className="ml-auto text-sm bg-zinc-800 hover:bg-zinc-700 transition px-4 py-2 rounded-xl"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-          <textarea
-            placeholder="Content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl h-90 outline-none focus:border-blue-500"
-          />
-          <input
-            type="text"
-            placeholder="Source"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-xl outline-none focus:border-blue-500"
-          />
-          {/* <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-500 transition px-6 py-3 rounded-xl font-semibold"
-          > */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleAISummary}
-              className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-xl font-semibold"
-            >
-              {aiLoading ? "Generating..." : "Generate AI Summary"}
-            </button>
-
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-500 transition px-6 py-3 rounded-xl font-semibold"
-            >
-              {editingId ? "Update Summary" : "Save Summary"}
-            </button>
-          </div>
-          {/* </button> */}
-        </form>
-        {/* load du liệu */}
-        {loading ? (
-          <p className="text-zinc-400">Loading...</p>
-        ) : summaries.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center">
-            <p className="text-zinc-400">No summaries yet 😄</p>
-          </div>
-        ) : (
-          <div className="space-y-5">
-            {filteredSummaries.slice(0, visibleCount).map((summary) => (
-              // Hiển thị tags nếu có
-              <div
-                key={summary.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6"
-              >
-                <div className="flex gap-2 mt-3 flex-wrap">
-                  {summary.tags?.split(",").map((tag, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setSelectedTag(tag.trim());
-                        setVisibleCount(3);
-                      }}
-                      className="bg-purple-500/20 hover:bg-purple-500/40 transition text-purple-300 px-3 py-1 rounded-full text-sm"
-                    >
-                      #{tag.trim()}
-                    </button>
-                  ))}
-                </div>
-                {/* load title */}
-                <h2 className="text-2xl font-bold mb-3">{summary.title}</h2>
-                {/* load content */}
-                <p className="text-zinc-300 mb-5 leading-relaxed">
-                  {summary.content}
-                </p>
-                {/* load source */}
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500 text-sm">
-                    {summary.source}
-                    <a
-                      href={summary.source}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 text-sm underline"
-                    >
-                      🔗 Read Original Article
-                    </a>
-                  </span>
-                  {/* load actions */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setEditingId(summary.id);
-
-                        setTitle(summary.title);
-                        setContent(summary.content);
-                        setSource(summary.source);
-                      }}
-                      className="bg-yellow-500 hover:bg-yellow-400 transition text-black px-4 py-2 rounded-xl font-medium"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(summary.id)}
-                      className="bg-red-600 hover:bg-red-500 transition px-4 py-2 rounded-xl font-medium"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {/* load more button */}
-        {visibleCount < filteredSummaries.length && (
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => setVisibleCount(visibleCount + 3)}
-              className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-2xl"
-            >
-              Load More
-            </button>
-          </div>
-        )}
+        <SummaryList
+          summaries={summaries}
+          loading={loading}
+          filteredSummaries={filteredSummaries}
+          setSelectedTag={setSelectedTag}
+          setVisibleCount={setVisibleCount}
+          setEditingId={setEditingId}
+          setTitle={setTitle}
+          setContent={setContent}
+          setSource={setSource}
+          handleDelete={handleDelete}
+          visibleCount={visibleCount}
+        />
       </div>
     </div>
   );

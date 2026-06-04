@@ -268,12 +268,13 @@ app.post("/api/article-summary", authMiddleware, async (req, res) => {
       return res.json({
         success: true,
         summary: existingSummary.rows[0].content,
+        title: existingSummary.rows[0].title,
         cached: true,
       });
     }
-    {
-      const article = await processArticle(url, req.user.id);
-    }
+
+    const article = await processArticle(url, req.user.id);
+
     // // Fetch webpage
     // const response = await axios.get(url, {
     //   headers: {
@@ -341,12 +342,6 @@ app.post("/api/article-summary", authMiddleware, async (req, res) => {
     // console.log("SAVED!");
 
     res.json({
-      // success: true,
-      // title: aiTitle,
-      // summary: summary,
-      // source: url,
-      // tags,
-      // cached: false,
       success: true,
       summary: article.content,
       preview: article.content.slice(0, 300),
