@@ -1,10 +1,11 @@
-import axios from "axios";
+//import axios from "axios";
 import { API_URL } from "../api";
+import apiClient from "./apiClient";
 
 // API endpoint cho login
 export const loginAPI = async (email, password) => {
   try {
-    const response = await axios.post(`${API_URL}/api/login`, {
+    const response = await apiClient.post(`${API_URL}/api/login`, {
       email,
       password,
     });
@@ -28,7 +29,7 @@ export const logoutAPI = () => {
 };
 // API endpoint cho register
 export const registerAPI = async (email, password) => {
-  await axios.post(`${API_URL}/api/register`, {
+  await apiClient.post(`${API_URL}/api/register`, {
     email,
     password,
   });

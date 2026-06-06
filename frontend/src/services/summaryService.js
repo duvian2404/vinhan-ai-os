@@ -1,5 +1,6 @@
-import axios from "axios";
+//import axios from "axios";
 import { API_URL, getAuthHeaders } from "../api";
+import apiClient from "./apiClient";
 
 // API endpoint cho fetch summaries
 export const fetchSummariesAPI = async () => {
@@ -8,7 +9,7 @@ export const fetchSummariesAPI = async () => {
     return;
   }
   try {
-    const response = await axios.get(
+    const response = await apiClient.get(
       `${API_URL}/api/summaries`,
       getAuthHeaders(),
     );
@@ -29,7 +30,7 @@ export const saveSummaryAPI = async (title, content, source, editingId) => {
 
   const method = editingId ? "PUT" : "POST";
 
-  const response = await axios(url, {
+  const response = await apiClient(url, {
     method,
     ...getAuthHeaders(),
     data: {
@@ -44,7 +45,7 @@ export const saveSummaryAPI = async (title, content, source, editingId) => {
 
 // API endpoint cho delete summary
 export const deleteSummaryAPI = async (id) => {
-  await axios.delete(`${API_URL}/api/summaries/${id}`, {
+  await apiClient.delete(`${API_URL}/api/summaries/${id}`, {
     ...getAuthHeaders(),
   });
 };

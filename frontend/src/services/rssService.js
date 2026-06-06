@@ -1,8 +1,9 @@
-import axios from "axios";
+//import axios from "axios";
 import { API_URL, getAuthHeaders } from "../api";
+import apiClient from "./apiClient";
 
 export const saveRssConfigAPI = async (rssEnabled, rssFeedUrl) => {
-  await axios.post(
+  await apiClient.post(
     `${API_URL}/api/rss-config`,
     {
       enabled: rssEnabled,
@@ -14,7 +15,7 @@ export const saveRssConfigAPI = async (rssEnabled, rssFeedUrl) => {
 };
 
 export const fetchRssConfigAPI = async () => {
-  const response = await axios.get(
+  const response = await apiClient.get(
     `${API_URL}/api/rss-config`,
     getAuthHeaders(),
   );

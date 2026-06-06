@@ -22,7 +22,7 @@ import SummaryList from "./components/summaryList";
 // Main App component
 function App() {
   const [summaries, setSummaries] = useState([]);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
@@ -42,11 +42,14 @@ function App() {
 
   // API endpoint cho lấy tất cả summaries
   const fetchSummaries = async () => {
+    setLoading(true);
     try {
       const data = await fetchSummariesAPI();
       setSummaries(data);
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
   //
@@ -193,12 +196,9 @@ function App() {
       return;
     }
     alert("Logged out 😄");
-    resetForm();
-    setUser(null);
-    setSummaries([]);
-    setEmail("");
-    setPassword("");
+    resetUI();
   };
+
   // API endpoint cho register
   const register = async () => {
     try {
@@ -217,10 +217,21 @@ function App() {
     setArticleUrl("");
     setSelectedTag("");
   };
+
+  const resetUI = () => {
+    setUser(null);
+    setSummaries([]);
+    setEmail("");
+    setPassword("");
+    setSource("");
+    resetForm();
+  };
   //===================Hien thi ra Browser=================
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
       <div className="max-w-4xl mx-auto">
+        // Phần giao diện quản lý authentication, RSS config, form tạo summary
+        và danh sách summaries
         <AuthSection
           email={email}
           setEmail={setEmail}
@@ -233,7 +244,6 @@ function App() {
           summaries={summaries}
           filteredSummaries={filteredSummaries}
         />
-
         <RSSSettings
           cachedResult={cachedResult}
           rssEnabled={rssEnabled}
@@ -242,7 +252,6 @@ function App() {
           setRssFeedUrl={setRssFeedUrl}
           saveRssConfig={saveRssConfig}
         />
-
         <SummaryForm
           articleUrl={articleUrl}
           setArticleUrl={setArticleUrl}
@@ -261,7 +270,6 @@ function App() {
           selectedTag={selectedTag}
           setSelectedTag={setSelectedTag}
         />
-
         <SummaryList
           summaries={summaries}
           loading={loading}

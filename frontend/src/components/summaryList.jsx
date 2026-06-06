@@ -1,3 +1,5 @@
+import { LOAD_MORE_STEP } from "../services/constants";
+
 function SummaryList({
   summaries,
   loading,
@@ -10,6 +12,7 @@ function SummaryList({
   setContent,
   setSource,
   handleDelete,
+  //LOAD_MORE_STEP,
 }) {
   return (
     <div>
@@ -92,7 +95,7 @@ function SummaryList({
         <div className="mt-8 text-center">
           <button
             type="button"
-            onClick={() => setVisibleCount(visibleCount + 3)}
+            onClick={() => setVisibleCount(visibleCount + LOAD_MORE_STEP)}
             className="bg-purple-600 hover:bg-purple-500 transition px-6 py-3 rounded-2xl"
           >
             Load More

@@ -1,9 +1,10 @@
-import axios from "axios";
+//import axios from "axios";
 import { API_URL, getAuthHeaders } from "../api";
+import apiClient from "./apiClient";
 
 // API endpoint cho AI-summary
 export const generateSummaryAPI = async (content) => {
-  const response = await axios.post(
+  const response = await apiClient.post(
     `${API_URL}/api/ai-summary`,
     {
       content,
@@ -15,7 +16,7 @@ export const generateSummaryAPI = async (content) => {
 
 // API endpoint cho Article-summary
 export const generateArticleSummaryAPI = async (articleUrl) => {
-  const response = await axios.post(
+  const response = await apiClient.post(
     `${API_URL}/api/article-summary`,
     {
       url: articleUrl,
