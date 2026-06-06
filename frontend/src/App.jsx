@@ -19,6 +19,10 @@ import RSSSettings from "./components/RSSSettings";
 import SummaryForm from "./components/summaryFrom";
 import SummaryList from "./components/summaryList";
 import SearchBar from "./components/searchBar";
+import SortSelector from "./components/sortSelection";
+
+import { sortSummaries } from "./utils/sortUtils";
+import { filterSummaries } from "./utils/sortUtils";
 
 // Main App component
 function App() {
@@ -40,6 +44,7 @@ function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
+  const [sortBy, setSortBy] = useState("newest");
 
   // API endpoint cho lấy tất cả summaries
   const fetchSummaries = async () => {
@@ -53,7 +58,7 @@ function App() {
       setLoading(false);
     }
   };
-  //
+
   useEffect(() => {
     const fetchRssConfig = async () => {
       const data = await fetchRssConfigAPI();
@@ -159,20 +164,9 @@ function App() {
     }
   };
 
-  // tao filter summaries
-  // const filteredSummaries = selectedTag
-  //   ? summaries.filter((summary) => summary.tags?.includes(selectedTag))
-  //   : summaries;
-  const filteredSummaries = summaries.filter((summary) => {
-    const matchTag = !selectedTag || summary.tags?.includes(selectedTag);
+  const filteredSummaries = filterSummaries(summaries, selectedTag, searchTerm);
 
-    const matchSearch =
-      !searchTerm ||
-      summary.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      summary.content.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchTag && matchSearch;
-  });
+  const sortedSummaries = sortSummaries(filteredSummaries, sortBy);
 
   // API endpoint cho lưu cấu hình RSS
   const saveRssConfig = async () => {
@@ -282,10 +276,11 @@ function App() {
           setSelectedTag={setSelectedTag}
         />
         <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        <SortSelector sortBy={sortBy} setSortBy={setSortBy} />
         <SummaryList
           summaries={summaries}
           loading={loading}
-          filteredSummaries={filteredSummaries}
+          filteredSummaries={sortedSummaries}
           setSelectedTag={setSelectedTag}
           setVisibleCount={setVisibleCount}
           setEditingId={setEditingId}

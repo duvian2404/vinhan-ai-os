@@ -1,0 +1,16 @@
+{
+  "editor.tabCompletion": "on",
+  "editor.quickSuggestions": { "other": true, "comments": false, "strings": false },
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.acceptSuggestionOnCommitCharacter": true,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.inlineSuggest.enabled": true,
+  "editor.suggestSelection": "first",
+  "editor.quickSuggestionsDelay": 10,
+  "emmet.triggerExpansionOnTab": false,
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+  "javascript.suggest.enabled": true,
+  "typescript.suggest.enabled": true,
+  "javascript.suggest.completeFunctionCalls": true,
+  "typescript.suggest.completeFunctionCalls": true
+}
