@@ -220,61 +220,62 @@ function App() {
   //===================Hien thi ra Browser=================
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
-      <div className="max-w-4xl mx-auto"></div>
-      <AuthSection
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        user={user}
-        login={login}
-        logout={logout}
-        register={register}
-        summaries={summaries}
-        filteredSummaries={filteredSummaries}
-      />
+      <div className="max-w-4xl mx-auto">
+        <AuthSection
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          user={user}
+          login={login}
+          logout={logout}
+          register={register}
+          summaries={summaries}
+          filteredSummaries={filteredSummaries}
+        />
 
-      <RSSSettings
-        cachedResult={cachedResult}
-        rssEnabled={rssEnabled}
-        setRssEnabled={setRssEnabled}
-        rssFeedUrl={rssFeedUrl}
-        setRssFeedUrl={setRssFeedUrl}
-        saveRssConfig={saveRssConfig}
-      />
+        <RSSSettings
+          cachedResult={cachedResult}
+          rssEnabled={rssEnabled}
+          setRssEnabled={setRssEnabled}
+          rssFeedUrl={rssFeedUrl}
+          setRssFeedUrl={setRssFeedUrl}
+          saveRssConfig={saveRssConfig}
+        />
 
-      <SummaryForm
-        articleUrl={articleUrl}
-        setArticleUrl={setArticleUrl}
-        handleSubmit={handleSubmit}
-        handleArticleSummary={handleArticleSummary}
-        handleAISummary={handleAISummary}
-        aiLoading={aiLoading}
-        title={title}
-        setTitle={setTitle}
-        content={content}
-        setContent={setContent}
-        source={source}
-        setSource={setSource}
-        editingId={editingId}
-        filteredSummaries={filteredSummaries}
-        selectedTag={selectedTag}
-        setSelectedTag={setSelectedTag}
-      />
+        <SummaryForm
+          articleUrl={articleUrl}
+          setArticleUrl={setArticleUrl}
+          handleSubmit={handleSubmit}
+          handleArticleSummary={handleArticleSummary}
+          handleAISummary={handleAISummary}
+          aiLoading={aiLoading}
+          title={title}
+          setTitle={setTitle}
+          content={content}
+          setContent={setContent}
+          source={source}
+          setSource={setSource}
+          editingId={editingId}
+          filteredSummaries={filteredSummaries}
+          selectedTag={selectedTag}
+          setSelectedTag={setSelectedTag}
+        />
 
-      <SummaryList
-        summaries={summaries}
-        loading={loading}
-        filteredSummaries={filteredSummaries}
-        setSelectedTag={setSelectedTag}
-        setVisibleCount={setVisibleCount}
-        setEditingId={setEditingId}
-        setTitle={setTitle}
-        setContent={setContent}
-        setSource={setSource}
-        handleDelete={handleDelete}
-        visibleCount={visibleCount}
-      />
+        <SummaryList
+          summaries={summaries}
+          loading={loading}
+          filteredSummaries={filteredSummaries}
+          setSelectedTag={setSelectedTag}
+          setVisibleCount={setVisibleCount}
+          setEditingId={setEditingId}
+          setTitle={setTitle}
+          setContent={setContent}
+          setSource={setSource}
+          handleDelete={handleDelete}
+          visibleCount={visibleCount}
+        />
+      </div>
     </div>
   );
 }

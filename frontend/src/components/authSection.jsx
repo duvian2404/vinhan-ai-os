@@ -104,7 +104,6 @@ function AuthSection({
         </div>
       </div>
     </div>
-    // </div>
   );
 }
 
