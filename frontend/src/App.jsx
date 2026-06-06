@@ -18,6 +18,7 @@ import RSSSettings from "./components/RSSSettings";
 
 import SummaryForm from "./components/summaryFrom";
 import SummaryList from "./components/summaryList";
+import SearchBar from "./components/searchBar";
 
 // Main App component
 function App() {
@@ -27,7 +28,7 @@ function App() {
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
   const [editingId, setEditingId] = useState(null);
-  //const [search, setSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [articleUrl, setArticleUrl] = useState("");
   const [cachedResult, setCachedResult] = useState(false);
@@ -159,9 +160,19 @@ function App() {
   };
 
   // tao filter summaries
-  const filteredSummaries = selectedTag
-    ? summaries.filter((summary) => summary.tags?.includes(selectedTag))
-    : summaries;
+  // const filteredSummaries = selectedTag
+  //   ? summaries.filter((summary) => summary.tags?.includes(selectedTag))
+  //   : summaries;
+  const filteredSummaries = summaries.filter((summary) => {
+    const matchTag = !selectedTag || summary.tags?.includes(selectedTag);
+
+    const matchSearch =
+      !searchTerm ||
+      summary.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      summary.content.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchTag && matchSearch;
+  });
 
   // API endpoint cho lưu cấu hình RSS
   const saveRssConfig = async () => {
@@ -270,6 +281,7 @@ function App() {
           selectedTag={selectedTag}
           setSelectedTag={setSelectedTag}
         />
+        <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         <SummaryList
           summaries={summaries}
           loading={loading}
