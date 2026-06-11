@@ -24,14 +24,6 @@ function RSSSettings({
         <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
           <h2 className="text-xl font-bold mb-4">RSS Control Panel</h2>
 
-          <div className="flex items-center gap-3 mb-4">
-            <input
-              type="checkbox"
-              checked={rssEnabled}
-              onChange={(e) => setRssEnabled(e.target.checked)}
-            />
-            <span>Auto RSS Import</span>
-          </div>
           <input
             type="text"
             value={rssFeedUrl}
@@ -39,12 +31,23 @@ function RSSSettings({
             placeholder="RSS Feed URL"
             className="w-full p-3 rounded-xl bg-zinc-800 mb-4"
           />
+          <div className="flex items-center gap-3 mb-4">
+            <input
+              type="checkbox"
+              checked={rssEnabled}
+              onChange={(e) => setRssEnabled(e.target.checked)}
+            />
+            <span>Auto RSS Import</span>
+            <dev>
+              <i>( Import Interval [30] phút )</i>
+            </dev>
+          </div>
 
           <button
             onClick={saveRssConfig}
             className="bg-purple-600 px-5 py-3 rounded-xl"
           >
-            Save RSS Config
+            Save & Run
           </button>
         </div>
       </div>

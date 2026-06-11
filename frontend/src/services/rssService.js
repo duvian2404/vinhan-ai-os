@@ -2,16 +2,16 @@
 import { API_URL, getAuthHeaders } from "../api";
 import apiClient from "./apiClient";
 
-export const saveRssConfigAPI = async (rssEnabled, rssFeedUrl) => {
-  await apiClient.post(
+export const saveRssConfigAPI = async (feedUrl, enabled) => {
+  console.log("TOKEN:", localStorage.getItem("token"));
+
+  const response = await apiClient.post(
     `${API_URL}/api/rss-config`,
-    {
-      enabled: rssEnabled,
-      feedUrl: rssFeedUrl,
-    },
+    { feedUrl, enabled },
     getAuthHeaders(),
   );
-  return true;
+
+  return response.data;
 };
 
 export const fetchRssConfigAPI = async () => {

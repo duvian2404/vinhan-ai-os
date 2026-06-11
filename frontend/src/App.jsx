@@ -24,6 +24,9 @@ import SortSelector from "./components/sortSelection";
 import { sortSummaries } from "./utils/sortUtils";
 import { filterSummaries } from "./utils/sortUtils";
 
+import StatsCards from "./components/starsCards";
+import RecentArticles from "./components/recentArticles";
+
 // Main App component
 function App() {
   const [summaries, setSummaries] = useState([]);
@@ -114,6 +117,19 @@ function App() {
       alert("Save failed 😢");
     }
   };
+
+  const filteredSummaries = filterSummaries(summaries, selectedTag, searchTerm);
+
+  const sortedSummaries = sortSummaries(filteredSummaries, sortBy);
+
+  const totalArticles = summaries.length;
+
+  const totalTags = new Set(
+    summaries.flatMap((summary) => summary.tags?.split(",") || []),
+  ).size;
+
+  const showingResults = sortedSummaries.length;
+
   // API endpoint cho delete summary
   const handleDelete = async (id) => {
     await deleteSummaryAPI(id);
@@ -164,15 +180,12 @@ function App() {
     }
   };
 
-  const filteredSummaries = filterSummaries(summaries, selectedTag, searchTerm);
-
-  const sortedSummaries = sortSummaries(filteredSummaries, sortBy);
-
   // API endpoint cho lưu cấu hình RSS
   const saveRssConfig = async () => {
     try {
-      await saveRssConfigAPI(rssEnabled, rssFeedUrl);
-      alert("RSS Config Saved 😄");
+      await saveRssConfigAPI(rssFeedUrl, rssEnabled);
+      await fetchSummaries();
+      // alert("RSS Config Saved 😄");
     } catch (error) {
       console.error(error);
       alert("Failed to save RSS config 😢");
@@ -246,9 +259,15 @@ function App() {
           login={login}
           logout={logout}
           register={register}
+        />
+        <StatsCards
           summaries={summaries}
           filteredSummaries={filteredSummaries}
+          totalArticles={totalArticles}
+          totalTags={totalTags}
+          showingResults={showingResults}
         />
+        <RecentArticles summaries={summaries} />
         <RSSSettings
           cachedResult={cachedResult}
           rssEnabled={rssEnabled}

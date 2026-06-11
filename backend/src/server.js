@@ -248,20 +248,21 @@ app.put("/api/summaries/:id", authMiddleware, async (req, res) => {
 //===================API endpoint cho article summary=================
 
 app.post("/api/article-summary", authMiddleware, async (req, res) => {
-  // Tách logic xử lý article summary ra một hàm riêng để có thể tái sử dụng cho cả API endpoint và RSS import
-
   try {
+    //console.log("acvs", req.url);
     const { url } = req.body;
-
+    const userId = req.user.id;
+    const existingSummary = await findExistingSummary(url, userId);
     // Kiểm tra nếu đã có summary cho URL này trong DB
-    const existingSummary = await pool.query(
-      `
-          SELECT * FROM summaries
-          WHERE source = $1 AND user_id = $2
-          LIMIT 1
-          `,
-      [url, req.user.id],
-    );
+    // const existingSummary = await pool.query(
+    //   `
+    //       SELECT * FROM summaries
+    //       WHERE source = $1 AND user_id = $2
+    //       LIMIT 1
+    //       `,
+    //   [url, req.user.id],
+    // );
+
     // Nếu đã có thì trả về luôn, không cần gọi Gemini nữa
     if (existingSummary.rows.length > 0) {
       const result = existingSummary.rows[0];
@@ -274,72 +275,6 @@ app.post("/api/article-summary", authMiddleware, async (req, res) => {
     }
 
     const article = await processArticle(url, req.user.id);
-
-    // // Fetch webpage
-    // const response = await axios.get(url, {
-    //   headers: {
-    //     "User-Agent":
-    //       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-    //   },
-    // });
-
-    // // Load HTML
-    // const $ = cheerio.load(response.data);
-    // // Extract paragraphs
-    // let articleText = "";
-    // $("p").each((i, el) => {
-    //   articleText += $(el).text() + "\n";
-    // });
-    // articleText = articleText.slice(0, 5000);
-
-    // // Gemini model
-    // const model = genAI.getGenerativeModel({
-    //   model: "gemini-3-flash-preview",
-    // });
-    // // Generate summary
-    // const result = await model.generateContent(
-    //   `
-    //       Hãy đọc bài viết sau và trả về:
-
-    //       1. Tiêu đề ngắn gọn bằng tiếng Việt
-    //       2. Bản tóm tắt rõ ràng bằng tiếng Việt
-    //       3. 3 đến 5 tags liên quan
-
-    //       Format trả về:
-
-    //       TITLE:
-    //       ...
-
-    //       SUMMARY:
-    //       ...
-
-    //       TAGS:
-    //       AI, OpenAI, Coding
-    //       Bài viết:
-
-    //       ${articleText}
-    //       `,
-    // );
-
-    // // Lấy response từ Gemini
-    // const aiResponse = await result.response;
-    // const fullText = aiResponse.text();
-    // const titleMatch = fullText.match(/TITLE:\s*(.*)/);
-    // const summaryMatch = fullText.match(/SUMMARY:\s*([\s\S]*)/);
-    // const aiTitle = titleMatch ? titleMatch[1] : "AI Article Summary";
-    // const summary = summaryMatch ? summaryMatch[1] : fullText;
-    // const tagsMatch = fullText.match(/TAGS:\s*(.*)/);
-    // const tags = tagsMatch ? tagsMatch[1] : "";
-    // // Lưu summary vào DB
-    // await pool.query(
-    //   `
-    //   INSERT INTO summaries
-    //   (title, content, source, tags, user_id)
-    //   VALUES ($1, $2, $3, $4, $5)
-    //   `,
-    //   [aiTitle, summary, url, tags, req.user.id],
-    // );
-    // console.log("SAVED!");
 
     res.json({
       success: true,
@@ -380,162 +315,56 @@ app.get("/api/rss-test", authMiddleware, async (req, res) => {
   }
 });
 // //====================API endpoint cho import RSS feed và tạo summary=================
-app.get("/api/rss-import", async (req, res) => {
-  try {
-    await importRSS();
-    // const feed = await parser.parseURL(
-    //   "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-    // );
+// app.get("/api/rss-import", authMiddleware, async (req, res) => {
+//   try {
+//     await importRSS();
+//     // const feed = await parser.parseURL(
+//     //   "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+//     // );
 
-    // // const articles = feed.items.slice(0, 3);
-    // // for (const article of articles) {
-    // //   console.log(article.title);
-    // // }
-    // const imported = [];
+//     // // const articles = feed.items.slice(0, 3);
+//     // // for (const article of articles) {
+//     // //   console.log(article.title);
+//     // // }
+//     // const imported = [];
 
-    // for (const article of articles) {
-    //   try {
-    //     const processed = await processArticle(article.link);
+//     // for (const article of articles) {
+//     //   try {
+//     //     const processed = await processArticle(article.link);
 
-    //     imported.push(processed);
-    //   } catch (error) {
-    //     console.log("FAILED:", article.link);
-    //   }
-    // }
+//     //     imported.push(processed);
+//     //   } catch (error) {
+//     //     console.log("FAILED:", article.link);
+//     //   }
+//     // }
 
-    res.json({
-      success: true,
-      message: "RSS imported",
-    });
-  } catch (error) {
-    console.log(error);
+//     res.json({
+//       success: true,
+//       message: "RSS imported",
+//     });
+//   } catch (error) {
+//     console.log(error);
 
-    res.status(500).json({
-      error: "RSS import failed",
-    });
-  }
-});
-
-// Hàm chính để import RSS feed và tạo summary cho các bài viết mới
-async function importRSS() {
-  const feed = await parser.parseURL("https://vietnamnet.vn/rss/cong-nghe.rss");
-
-  const articles = feed.items.slice(0, 3);
-
-  for (const article of articles) {
-    try {
-      await processArticle(article.link);
-
-      console.log("✅ Imported:", article.title);
-    } catch (error) {
-      console.log("❌ Failed:", article.link);
-    }
-  }
-}
-// Hàm xử lý tóm tắt bài viết từ URL, có kiểm tra cache trước khi gọi Gemini
-async function processArticle(url, userId) {
-  // const existingSummary = await pool.query(
-  //   `
-  //         SELECT * FROM summaries
-  //         WHERE source = $1 AND user_id = $2
-  //         LIMIT 1
-  //         `,
-  //   [url, userId],
-  // );
-  // // Nếu đã có thì trả về luôn, không cần gọi Gemini nữa
-  // if (existingSummary.rows.length > 0) {
-  //   const article = existingSummary.rows[0];
-  //   return res.json({
-  //     success: true,
-  //     summary: existingSummary.rows[0].content,
-  //     cached: true,
-  //   });
-  // }
-  // Fetch webpage
-  const response = await axios.get(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-    },
-  });
-
-  // Load HTML
-  const $ = cheerio.load(response.data);
-  // Extract paragraphs
-  let articleText = "";
-  $("p").each((i, el) => {
-    articleText += $(el).text() + "\n";
-  });
-  articleText = articleText.slice(0, 5000);
-
-  // Gemini model
-  const model = genAI.getGenerativeModel({
-    model: "gemini-3-flash-preview",
-  });
-  // Generate summary
-  const result = await model.generateContent(
-    `
-          Hãy đọc bài viết sau và trả về:
-
-          1. Tiêu đề ngắn gọn bằng tiếng Việt
-          2. Bản tóm tắt rõ ràng bằng tiếng Việt
-          3. 3 đến 5 tags liên quan
-
-          Format trả về:
-
-          TITLE:
-          ...
-
-          SUMMARY:
-          ...
-
-          TAGS:
-          AI, OpenAI, Coding
-          Bài viết:
-
-          ${articleText}
-          `,
-  );
-
-  // Lấy response từ Gemini
-  const aiResponse = await result.response;
-  const fullText = aiResponse.text();
-  const titleMatch = fullText.match(/TITLE:\s*(.*)/);
-  const summaryMatch = fullText.match(/SUMMARY:\s*([\s\S]*)/);
-  const aiTitle = titleMatch ? titleMatch[1] : "AI Article Summary";
-  const summary = summaryMatch ? summaryMatch[1] : fullText;
-  const tagsMatch = fullText.match(/TAGS:\s*(.*)/);
-  const tags = tagsMatch ? tagsMatch[1] : "";
-  // Lưu summary vào DB
-  await pool.query(
-    `
-      INSERT INTO summaries
-      (title, content, source, tags, user_id)
-      VALUES ($1, $2, $3, $4, $5)
-      `,
-    [aiTitle, summary, url, tags, userId],
-  );
-  console.log("SAVED!");
-  return {
-    title: aiTitle,
-    content: summary,
-    source: url,
-    tags: tags,
-    cache: false,
-  };
-}
+//     res.status(500).json({
+//       error: "RSS import failed",
+//     });
+//   }
+// });
 
 // Thiết lập cron job chạy mỗi 30 phút để tự động import RSS feed
-
-cron.schedule("* * * * *", async () => {
-  if (!rssEnabled) {
-    return;
-  }
-
+cron.schedule("* * * * 1", async () => {
   console.log("🤖 Running RSS import...");
-
-  await importRSS();
+  const configs = await pool.query(
+    `SELECT *
+          FROM rss_configs
+          WHERE enabled = true
+    `,
+  );
+  for (const config of configs.rows) {
+    await importRSS(config.feed_url, config.user_id);
+  }
 });
+
 // API endpoint để lấy cấu hình RSS feed cho frontend
 app.get("/api/rss-config", (req, res) => {
   res.json({
@@ -544,19 +373,42 @@ app.get("/api/rss-config", (req, res) => {
   });
 });
 // API endpoint để cập nhật cấu hình RSS feed từ frontend
-app.post("/api/rss-config", (req, res) => {
-  const { enabled, feedUrl } = req.body;
+app.post("/api/rss-config", authMiddleware, async (req, res) => {
+  // console.log("BODY", req.body);
+  // console.log("User", req.user);
 
-  rssEnabled = enabled;
-  rssFeedUrl = feedUrl;
+  const userId = req.user.id;
+  const { feedUrl, enabled } = req.body;
+  console.log("Enable &url", feedUrl, enabled);
+  try {
+    //const ExistingSummary = await findExistingSummary(feedUrl, userId);
+    await importRSS(feedUrl, userId);
 
-  console.log("⚙️ RSS CONFIG UPDATED");
+    if (enabled) {
+      const result = await pool.query(
+        `
+      INSERT INTO rss_configs
+      (
+      user_id,
+      feed_url,
+      enabled)
+      VALUES ($1,$2,$3)
 
-  res.json({
-    success: true,
-    rssEnabled,
-    rssFeedUrl,
-  });
+      `,
+        [userId, feedUrl, enabled],
+      );
+    }
+
+    return res.json({
+      success: true,
+      importedNow: true,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+    });
+  }
 });
 
 //====================API endpoint cho user registration=================
@@ -719,3 +571,135 @@ app.post("/api/register", async (req, res) => {
     });
   }
 });
+
+// khu để function
+async function findExistingSummary(url, userId) {
+  console.log("1234", url, userId);
+
+  // Kiểm tra nếu đã có summary cho URL này trong DB
+  const resultExit = await pool.query(
+    `
+          SELECT * FROM summaries
+          WHERE source = $1 AND user_id = $2
+          LIMIT 1
+          `,
+    [url, userId],
+  );
+
+  return (resultExit, console.log("CO BAI TRUNG"));
+}
+
+async function importRSS(feedUrl, userId) {
+  console.log("⚙️ RSS CONFIG UPDATED");
+
+  //const { url } = feedUrl;
+  // Kiểm tra nếu đã có summary cho URL này trong DB
+  const existingSummary = await pool.query(
+    `
+          SELECT * FROM summaries
+          WHERE source = $1 AND user_id = $2
+          LIMIT 1
+          `,
+    [feedUrl, userId],
+  );
+
+  if (existingSummary.rows.length > 0) {
+    const result = existingSummary.rows[0];
+    // return res.json({
+    //   success: true,
+    //   summary: existingSummary.rows[0].content,
+    //   title: existingSummary.rows[0].title,
+    //   cached: true,
+    // });
+    return console.log("CO BAI TRUNG");
+  }
+
+  const feed = await parser.parseURL(feedUrl);
+
+  const articles = feed.items.slice(0, 3);
+
+  for (const article of articles) {
+    try {
+      await processArticle(article.link, userId);
+
+      console.log("✅ Imported:", article.title);
+    } catch (error) {
+      console.log("❌ Failed:", article.link);
+    }
+  }
+}
+
+async function processArticle(url, userId) {
+  //==================================
+  const response = await axios.get(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    },
+  });
+
+  // Load HTML
+  const $ = cheerio.load(response.data);
+  // Extract paragraphs
+  let articleText = "";
+  $("p").each((i, el) => {
+    articleText += $(el).text() + "\n";
+  });
+  articleText = articleText.slice(0, 5000);
+
+  // Gemini model
+  const model = genAI.getGenerativeModel({
+    model: "gemini-3-flash-preview",
+  });
+  // Generate summary
+  const result = await model.generateContent(
+    `
+          Hãy đọc bài viết sau và trả về:
+
+          1. Tiêu đề ngắn gọn bằng tiếng Việt
+          2. Bản tóm tắt rõ ràng bằng tiếng Việt
+          3. 3 đến 5 tags liên quan
+
+          Format trả về:
+
+          TITLE:
+          ...
+
+          SUMMARY:
+          ...
+
+          TAGS:
+          AI, OpenAI, Coding
+          Bài viết:
+
+          ${articleText}
+          `,
+  );
+
+  // Lấy response từ Gemini
+  const aiResponse = await result.response;
+  const fullText = aiResponse.text();
+  const titleMatch = fullText.match(/TITLE:\s*(.*)/);
+  const summaryMatch = fullText.match(/SUMMARY:\s*([\s\S]*)/);
+  const aiTitle = titleMatch ? titleMatch[1] : "AI Article Summary";
+  const summary = summaryMatch ? summaryMatch[1] : fullText;
+  const tagsMatch = fullText.match(/TAGS:\s*(.*)/);
+  const tags = tagsMatch ? tagsMatch[1] : "";
+  // Lưu summary vào DB
+  await pool.query(
+    `
+      INSERT INTO summaries
+      (title, content, source, tags, user_id)
+      VALUES ($1, $2, $3, $4, $5)
+      `,
+    [aiTitle, summary, url, tags, userId],
+  );
+  console.log("SAVED!");
+  return {
+    title: aiTitle,
+    content: summary,
+    source: url,
+    tags: tags,
+    cache: false,
+  };
+}
