@@ -5,7 +5,7 @@ import apiClient from "./apiClient";
 // API endpoint cho login
 export const loginAPI = async (email, password) => {
   try {
-    const response = await apiClient.post(`${API_URL}/api/login`, {
+    const response = await apiClient.post(`${API_URL}/api/auth/login`, {
       email,
       password,
     });
@@ -29,7 +29,7 @@ export const logoutAPI = () => {
 };
 // API endpoint cho register
 export const registerAPI = async (email, password) => {
-  await apiClient.post(`${API_URL}/api/register`, {
+  await apiClient.post(`${API_URL}/api/auth/register`, {
     email,
     password,
   });

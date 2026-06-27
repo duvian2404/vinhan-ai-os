@@ -21,8 +21,9 @@ const cron = require("node-cron");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const authRouter = require("./routes/authRouter");
+const registRourter = require("./routes/registRouter");
 
-//
 app.use(cors());
 app.use(express.json());
 app.get("/api/health", (req, res) => {
@@ -251,17 +252,17 @@ app.post("/api/article-summary", authMiddleware, async (req, res) => {
   try {
     //console.log("acvs", req.url);
     const { url } = req.body;
-    const userId = req.user.id;
-    const existingSummary = await findExistingSummary(url, userId);
-    // Kiểm tra nếu đã có summary cho URL này trong DB
-    // const existingSummary = await pool.query(
-    //   `
-    //       SELECT * FROM summaries
-    //       WHERE source = $1 AND user_id = $2
-    //       LIMIT 1
-    //       `,
-    //   [url, req.user.id],
-    // );
+    //const userId = req.user.id;
+    //const existingSummary = await findExistingSummary(url, userId);
+    //Kiểm tra nếu đã có summary cho URL này trong DB
+    const existingSummary = await pool.query(
+      `
+          SELECT * FROM summaries
+          WHERE source = $1 AND user_id = $2
+          LIMIT 1
+          `,
+      [url, req.user.id],
+    );
 
     // Nếu đã có thì trả về luôn, không cần gọi Gemini nữa
     if (existingSummary.rows.length > 0) {
@@ -352,7 +353,7 @@ app.get("/api/rss-test", authMiddleware, async (req, res) => {
 // });
 
 // Thiết lập cron job chạy mỗi 30 phút để tự động import RSS feed
-cron.schedule("* * * * 1", async () => {
+cron.schedule("* */30 * * *", async () => {
   console.log("🤖 Running RSS import...");
   const configs = await pool.query(
     `SELECT *
@@ -411,97 +412,69 @@ app.post("/api/rss-config", authMiddleware, async (req, res) => {
   }
 });
 
-//====================API endpoint cho user registration=================
-app.post("/api/register", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result = await pool.query(
-      `
-      INSERT INTO users
-      (email, password)
-      VALUES ($1, $2)
-      RETURNING id, email
-      `,
-      [email, hashedPassword],
-    );
-
-    res.json({
-      success: true,
-      user: result.rows[0],
-    });
-  } catch (error) {
-    console.log(error);
-
-    res.status(500).json({
-      error: "Register failed",
-    });
-  }
-});
-
 //====================API endpoint cho user login=================
-app.post("/api/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// app.post("/api/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
 
-    // FIND USER
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM users
-      WHERE email = $1
-      `,
-      [email],
-    );
+//     // FIND USER
+//     const result = await pool.query(
+//       `
+//       SELECT *
+//       FROM users
+//       WHERE email = $1
+//       `,
+//       [email],
+//     );
 
-    const user = result.rows[0];
+//     const user = result.rows[0];
 
-    // USER NOT FOUND
-    if (!user) {
-      return res.status(400).json({
-        error: "User not found",
-      });
-    }
+//     // USER NOT FOUND
+//     if (!user) {
+//       return res.status(400).json({
+//         error: "User not found",
+//       });
+//     }
 
-    // CHECK PASSWORD
-    const validPassword = await bcrypt.compare(password, user.password);
+//     // CHECK PASSWORD
+//     const validPassword = await bcrypt.compare(password, user.password);
 
-    if (!validPassword) {
-      return res.status(400).json({
-        error: "Invalid password",
-      });
-    }
+//     if (!validPassword) {
+//       return res.status(400).json({
+//         error: "Invalid password",
+//       });
+//     }
 
-    // CREATE TOKEN
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      },
-    );
+//     // CREATE TOKEN
+//     const token = jwt.sign(
+//       {
+//         id: user.id,
+//         email: user.email,
+//       },
+//       process.env.JWT_SECRET,
+//       {
+//         expiresIn: "7d",
+//       },
+//     );
 
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    console.log(error);
+//     res.json({
+//       success: true,
+//       token,
+//       user: {
+//         id: user.id,
+//         email: user.email,
+//       },
+//     });
+//   } catch (error) {
+//     console.log(error);
 
-    res.status(500).json({
-      error: "Login failed",
-    });
-  }
-});
+//     res.status(500).json({
+//       error: "Login failed",
+//     });
+//   }
+// });
+
+app.use("/api/auth", authRouter);
 //====================API endpoint cho user profile (protected)=================
 app.get("/api/profile", (req, res) => {
   try {
@@ -529,49 +502,50 @@ app.get("/api/profile", (req, res) => {
   }
 });
 
-app.post("/api/register", async (req, res) => {
-  const { email, password } = req.body;
-  console.log(req.body);
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const existingUser = await pool.query(
-      `
-    SELECT *
-    FROM users
-    WHERE email = $1
-    `,
-      [email],
-    );
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({
-        error: "Email already exists",
-      });
+// app.post("/api/register", async (req, res) => {
+//   const { email, password } = req.body;
+//   console.log(req.body);
+//   try {
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     const existingUser = await pool.query(
+//       `
+//     SELECT *
+//     FROM users
+//     WHERE email = $1
+//     `,
+//       [email],
+//     );
+//     if (existingUser.rows.length > 0) {
+//       return res.status(400).json({
+//         error: "Email already exists",
+//       });
 
-      await pool.query(
-        `
-        INSERT INTO users
-        (
-          email,
-          password
-        )
+//       await pool.query(
+//         `
+//         INSERT INTO users
+//         (
+//           email,
+//           password
+//         )
 
-        VALUES ($1, $2)
-        `,
-        [email, hashedPassword],
-      );
-    }
-    res.json({
-      success: true,
-    });
-  } catch (error) {
-    console.log(error);
+//         VALUES ($1, $2)
+//         `,
+//         [email, hashedPassword],
+//       );
+//     }
+//     res.json({
+//       success: true,
+//     });
+//   } catch (error) {
+//     console.log(error);
 
-    res.status(500).json({
-      error: "Register failed",
-    });
-  }
-});
+//     res.status(500).json({
+//       error: "Register failed",
+//     });
+//   }
+// });
 
+app.use("/api/auth", registRourter);
 // khu để function
 async function findExistingSummary(url, userId) {
   console.log("1234", url, userId);
