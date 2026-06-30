@@ -21,8 +21,11 @@ const cron = require("node-cron");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
 const authRouter = require("./routes/authRouter");
-const registRourter = require("./routes/registRouter");
+const registRouter = require("./routes/registRouter");
+const summaryRouter = require("./routes/summaryRouter");
+const authMiddleware = require("./middleware/authMiddleware");
 
 app.use(cors());
 app.use(express.json());
@@ -34,34 +37,33 @@ app.get("/api/health", (req, res) => {
 });
 
 // Middleware để bảo vệ các route cần authentication
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  console.log(req.user);
-  if (!authHeader) {
-    return res.status(401).json({
-      error: "No token",
-    });
-  }
-  const token = authHeader.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+// const authMiddleware = (req, res, next) => {
+//   const authHeader = req.headers.authorization;
+//   console.log(req.user);
+//   if (!authHeader) {
+//     return res.status(401).json({
+//       error: "No token",
+//     });
+//   }
+//   const token = authHeader.split(" ")[1];
+//   try {
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = decoded;
-    console.log(req.user);
-    next();
-  } catch (error) {
-    console.log(error);
+//     req.user = decoded;
+//     console.log(req.user);
+//     next();
+//   } catch (error) {
+//     console.log(error);
 
-    res.status(401).json({
-      error: "Invalid token",
-    });
-  }
-};
+//     res.status(401).json({
+//       error: "Invalid token",
+//     });
+//   }
+// };
 
 //const PORT = 3000;
 const PORT = process.env.PORT || 3000;
 
-//=============== Khởi động server và kết nối DB =================
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
@@ -73,7 +75,7 @@ pool
   .catch((err) => {
     console.error("DB connection error:", err);
   });
-// ===============API endpoint cho AI summary================
+
 app.post("/api/ai-summary", async (req, res) => {
   try {
     const { content } = req.body;
@@ -101,8 +103,6 @@ app.post("/api/ai-summary", async (req, res) => {
   }
 });
 
-//=============== API endpoints cho summaries================
-// API test cho DB
 app.get("/api/test-db", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -123,130 +123,14 @@ app.get("/api/test-db", async (req, res) => {
     });
   }
 });
-// API endpoint cho lấy tất cả summaries
-app.get("/api/summaries", authMiddleware, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM summaries
-      WHERE user_id = $1
-      ORDER BY id DESC
-    `,
-      [req.user.id],
-    );
-    //console.log("Ở đây nè:", result.rows);
-    res.json({
-      success: true,
-      data: result.rows,
-    });
-  } catch (error) {
-    console.error(error);
 
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch summaries",
-    });
-  }
-});
+app.use("/api/summaries", summaryRouter);
 
-// API endpoint cho tạo summary mới
-app.post("/api/summaries", authMiddleware, async (req, res) => {
-  try {
-    const { title, content, source, tags } = req.body;
-    console.log(req.body);
+app.use("/api/summaries/id", summaryRouter);
 
-    console.log(
-      "Creating summary for user ID:",
-      req.user.id,
-      title,
-      content,
-      source,
-      tags,
-    );
-    const result = await pool.query(
-      `
-      INSERT INTO summaries (title, content, source,tags, user_id)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-      `,
-      [title, content, source, tags, req.user.id],
-    );
+app.use("/api/auth", authRouter);
 
-    res.status(201).json({
-      success: true,
-      data: result.rows[0],
-    });
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to create summary",
-    });
-  }
-});
-
-// API endpoint cho xóa summary
-app.delete("/api/summaries/:id", authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log("Deleting summary with ID:", id, "for user ID:", req.user.id);
-    await pool.query(
-      `
-      DELETE FROM summaries
-      WHERE id = $1 AND user_id = $2
-      `,
-      [id, req.user.id],
-    );
-    console.log("xoa!");
-    res.json({
-      success: true,
-      message: "Summary deleted",
-    });
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to delete summary",
-    });
-  }
-});
-
-// API endpoint cho cập nhật summary
-app.put("/api/summaries/:id", authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, content, source } = req.body;
-    const result = await pool.query(
-      `
-      UPDATE summaries
-      SET
-        title = $1,
-        content = $2,
-        source = $3
-      WHERE id = $4
-      RETURNING *
-      `,
-      [title, content, source, id],
-    );
-
-    res.json({
-      success: true,
-      data: result.rows[0],
-    });
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      error: "Failed to update summary",
-    });
-  }
-});
-
-//===================API endpoint cho article summary=================
+app.use("/api/auth", registRouter);
 
 app.post("/api/article-summary", authMiddleware, async (req, res) => {
   try {
@@ -294,7 +178,7 @@ app.post("/api/article-summary", authMiddleware, async (req, res) => {
     });
   }
 });
-//====================API endpoint cho test RSS feed=================
+
 app.get("/api/rss-test", authMiddleware, async (req, res) => {
   try {
     const feed = await rssFeedUrl;
@@ -315,7 +199,7 @@ app.get("/api/rss-test", authMiddleware, async (req, res) => {
     });
   }
 });
-// //====================API endpoint cho import RSS feed và tạo summary=================
+
 // app.get("/api/rss-import", authMiddleware, async (req, res) => {
 //   try {
 //     await importRSS();
@@ -353,7 +237,7 @@ app.get("/api/rss-test", authMiddleware, async (req, res) => {
 // });
 
 // Thiết lập cron job chạy mỗi 30 phút để tự động import RSS feed
-cron.schedule("* */30 * * *", async () => {
+cron.schedule("* */2 * * *", async () => {
   console.log("🤖 Running RSS import...");
   const configs = await pool.query(
     `SELECT *
@@ -366,14 +250,13 @@ cron.schedule("* */30 * * *", async () => {
   }
 });
 
-// API endpoint để lấy cấu hình RSS feed cho frontend
 app.get("/api/rss-config", (req, res) => {
   res.json({
     rssEnabled,
     rssFeedUrl,
   });
 });
-// API endpoint để cập nhật cấu hình RSS feed từ frontend
+
 app.post("/api/rss-config", authMiddleware, async (req, res) => {
   // console.log("BODY", req.body);
   // console.log("User", req.user);
@@ -412,70 +295,6 @@ app.post("/api/rss-config", authMiddleware, async (req, res) => {
   }
 });
 
-//====================API endpoint cho user login=================
-// app.post("/api/login", async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     // FIND USER
-//     const result = await pool.query(
-//       `
-//       SELECT *
-//       FROM users
-//       WHERE email = $1
-//       `,
-//       [email],
-//     );
-
-//     const user = result.rows[0];
-
-//     // USER NOT FOUND
-//     if (!user) {
-//       return res.status(400).json({
-//         error: "User not found",
-//       });
-//     }
-
-//     // CHECK PASSWORD
-//     const validPassword = await bcrypt.compare(password, user.password);
-
-//     if (!validPassword) {
-//       return res.status(400).json({
-//         error: "Invalid password",
-//       });
-//     }
-
-//     // CREATE TOKEN
-//     const token = jwt.sign(
-//       {
-//         id: user.id,
-//         email: user.email,
-//       },
-//       process.env.JWT_SECRET,
-//       {
-//         expiresIn: "7d",
-//       },
-//     );
-
-//     res.json({
-//       success: true,
-//       token,
-//       user: {
-//         id: user.id,
-//         email: user.email,
-//       },
-//     });
-//   } catch (error) {
-//     console.log(error);
-
-//     res.status(500).json({
-//       error: "Login failed",
-//     });
-//   }
-// });
-
-app.use("/api/auth", authRouter);
-//====================API endpoint cho user profile (protected)=================
 app.get("/api/profile", (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -502,50 +321,6 @@ app.get("/api/profile", (req, res) => {
   }
 });
 
-// app.post("/api/register", async (req, res) => {
-//   const { email, password } = req.body;
-//   console.log(req.body);
-//   try {
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     const existingUser = await pool.query(
-//       `
-//     SELECT *
-//     FROM users
-//     WHERE email = $1
-//     `,
-//       [email],
-//     );
-//     if (existingUser.rows.length > 0) {
-//       return res.status(400).json({
-//         error: "Email already exists",
-//       });
-
-//       await pool.query(
-//         `
-//         INSERT INTO users
-//         (
-//           email,
-//           password
-//         )
-
-//         VALUES ($1, $2)
-//         `,
-//         [email, hashedPassword],
-//       );
-//     }
-//     res.json({
-//       success: true,
-//     });
-//   } catch (error) {
-//     console.log(error);
-
-//     res.status(500).json({
-//       error: "Register failed",
-//     });
-//   }
-// });
-
-app.use("/api/auth", registRourter);
 // khu để function
 async function findExistingSummary(url, userId) {
   console.log("1234", url, userId);
