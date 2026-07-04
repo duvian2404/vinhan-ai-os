@@ -237,7 +237,7 @@ app.get("/api/rss-test", authMiddleware, async (req, res) => {
 // });
 
 // Thiết lập cron job chạy mỗi 30 phút để tự động import RSS feed
-cron.schedule("* */2 * * *", async () => {
+cron.schedule("0 * * * *", async () => {
   console.log("🤖 Running RSS import...");
   const configs = await pool.query(
     `SELECT *

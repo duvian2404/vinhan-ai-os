@@ -25,9 +25,14 @@ import { sortSummaries } from "./utils/sortUtils";
 import { filterSummaries } from "./utils/sortUtils";
 
 import StatsCards from "./components/starsCards";
-import RecentArticles from "./components/recentArticles";
+//import RecentArticles from "./components/recentArticles";
 
-// Main App component
+import Sidebar from "./components/layout/Sidebar";
+import DashboardLayout from "./components/layout/DashboardLayout";
+import LeftPanel from "./components/layout/LeftPanel";
+import RightPanel from "./components/layout/RightPanel";
+
+// Main App components
 function App() {
   const [summaries, setSummaries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -245,11 +250,76 @@ function App() {
     resetForm();
   };
   //===================Hien thi ra Browser=================
+  // return (
+  //   <div className="min-h-screen bg-zinc-950 text-white p-8">
+  //     <div className="max-w-4xl mx-auto">
+  //       <AuthSection
+  //         email={email}
+  //         setEmail={setEmail}
+  //         password={password}
+  //         setPassword={setPassword}
+  //         user={user}
+  //         login={login}
+  //         logout={logout}
+  //         register={register}
+  //       />
+  //       <StatsCards
+  //         summaries={summaries}
+  //         filteredSummaries={filteredSummaries}
+  //         totalArticles={totalArticles}
+  //         totalTags={totalTags}
+  //         showingResults={showingResults}
+  //       />
+  //       <RecentArticles summaries={summaries} />
+  //       <RSSSettings
+  //         cachedResult={cachedResult}
+  //         rssEnabled={rssEnabled}
+  //         setRssEnabled={setRssEnabled}
+  //         rssFeedUrl={rssFeedUrl}
+  //         setRssFeedUrl={setRssFeedUrl}
+  //         saveRssConfig={saveRssConfig}
+  //       />
+  //       <SummaryForm
+  //         articleUrl={articleUrl}
+  //         setArticleUrl={setArticleUrl}
+  //         handleSubmit={handleSubmit}
+  //         handleArticleSummary={handleArticleSummary}
+  //         handleAISummary={handleAISummary}
+  //         aiLoading={aiLoading}
+  //         title={title}
+  //         setTitle={setTitle}
+  //         content={content}
+  //         setContent={setContent}
+  //         source={source}
+  //         setSource={setSource}
+  //         editingId={editingId}
+  //         filteredSummaries={filteredSummaries}
+  //         selectedTag={selectedTag}
+  //         setSelectedTag={setSelectedTag}
+  //       />
+  //       <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+  //       <SortSelector sortBy={sortBy} setSortBy={setSortBy} />
+  //       <SummaryList
+  //         summaries={summaries}
+  //         loading={loading}
+  //         filteredSummaries={sortedSummaries}
+  //         setSelectedTag={setSelectedTag}
+  //         setVisibleCount={setVisibleCount}
+  //         setEditingId={setEditingId}
+  //         setTitle={setTitle}
+  //         setContent={setContent}
+  //         setSource={setSource}
+  //         handleDelete={handleDelete}
+  //         visibleCount={visibleCount}
+  //       />
+  //     </div>
+  //   </div>
+  // );
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        // Phần giao diện quản lý authentication, RSS config, form tạo summary
-        và danh sách summaries
+    <DashboardLayout>
+      <Sidebar />
+
+      <div className="flex-1 p-8">
         <AuthSection
           email={email}
           setEmail={setEmail}
@@ -260,6 +330,7 @@ function App() {
           logout={logout}
           register={register}
         />
+
         <StatsCards
           summaries={summaries}
           filteredSummaries={filteredSummaries}
@@ -267,50 +338,60 @@ function App() {
           totalTags={totalTags}
           showingResults={showingResults}
         />
-        <RecentArticles summaries={summaries} />
-        <RSSSettings
-          cachedResult={cachedResult}
-          rssEnabled={rssEnabled}
-          setRssEnabled={setRssEnabled}
-          rssFeedUrl={rssFeedUrl}
-          setRssFeedUrl={setRssFeedUrl}
-          saveRssConfig={saveRssConfig}
-        />
-        <SummaryForm
-          articleUrl={articleUrl}
-          setArticleUrl={setArticleUrl}
-          handleSubmit={handleSubmit}
-          handleArticleSummary={handleArticleSummary}
-          handleAISummary={handleAISummary}
-          aiLoading={aiLoading}
-          title={title}
-          setTitle={setTitle}
-          content={content}
-          setContent={setContent}
-          source={source}
-          setSource={setSource}
-          editingId={editingId}
-          filteredSummaries={filteredSummaries}
-          selectedTag={selectedTag}
-          setSelectedTag={setSelectedTag}
-        />
-        <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-        <SortSelector sortBy={sortBy} setSortBy={setSortBy} />
-        <SummaryList
-          summaries={summaries}
-          loading={loading}
-          filteredSummaries={sortedSummaries}
-          setSelectedTag={setSelectedTag}
-          setVisibleCount={setVisibleCount}
-          setEditingId={setEditingId}
-          setTitle={setTitle}
-          setContent={setContent}
-          setSource={setSource}
-          handleDelete={handleDelete}
-          visibleCount={visibleCount}
-        />
+
+        <div className="flex gap-8 mt-8">
+          <LeftPanel>
+            <RSSSettings
+              cachedResult={cachedResult}
+              rssEnabled={rssEnabled}
+              setRssEnabled={setRssEnabled}
+              rssFeedUrl={rssFeedUrl}
+              setRssFeedUrl={setRssFeedUrl}
+              saveRssConfig={saveRssConfig}
+            />
+
+            <SummaryForm
+              articleUrl={articleUrl}
+              setArticleUrl={setArticleUrl}
+              handleSubmit={handleSubmit}
+              handleArticleSummary={handleArticleSummary}
+              handleAISummary={handleAISummary}
+              aiLoading={aiLoading}
+              title={title}
+              setTitle={setTitle}
+              content={content}
+              setContent={setContent}
+              source={source}
+              setSource={setSource}
+              editingId={editingId}
+              filteredSummaries={filteredSummaries}
+              selectedTag={selectedTag}
+              setSelectedTag={setSelectedTag}
+            />
+          </LeftPanel>
+
+          <RightPanel>
+            <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+
+            <SortSelector sortBy={sortBy} setSortBy={setSortBy} />
+
+            <SummaryList
+              summaries={summaries}
+              loading={loading}
+              filteredSummaries={sortedSummaries}
+              setSelectedTag={setSelectedTag}
+              setVisibleCount={setVisibleCount}
+              setEditingId={setEditingId}
+              setTitle={setTitle}
+              setContent={setContent}
+              setSource={setSource}
+              handleDelete={handleDelete}
+              visibleCount={visibleCount}
+            />
+          </RightPanel>
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
 

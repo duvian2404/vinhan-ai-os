@@ -38,9 +38,9 @@ function RSSSettings({
               onChange={(e) => setRssEnabled(e.target.checked)}
             />
             <span>Auto RSS Import</span>
-            <dev>
+            <div>
               <i>( Import Interval [30] phút )</i>
-            </dev>
+            </div>
           </div>
 
           <button
