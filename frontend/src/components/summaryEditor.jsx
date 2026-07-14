@@ -1,4 +1,4 @@
-function SummaryForm({
+function SummaryEditor({
   aiLoading,
   title,
   setTitle,
@@ -90,4 +90,4 @@ function SummaryForm({
     </>
   );
 }
-export default SummaryForm;
+export default SummaryEditor;

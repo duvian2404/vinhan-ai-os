@@ -16,7 +16,7 @@ import { saveRssConfigAPI, fetchRssConfigAPI } from "./services/rssService";
 import AuthSection from "./components/authSection";
 import RSSSettings from "./components/RSSSettings";
 
-import SummaryForm from "./components/summaryFrom";
+//import SummaryForm from "./components/summaryFrom";
 import SummaryList from "./components/summaryList";
 import SearchBar from "./components/searchBar";
 import SortSelector from "./components/sortSelection";
@@ -31,6 +31,10 @@ import Sidebar from "./components/layout/Sidebar";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import LeftPanel from "./components/layout/LeftPanel";
 import RightPanel from "./components/layout/RightPanel";
+import Header from "./components/layout/Header";
+
+import QuickAISummary from "./components/QuickAISummary";
+import SummaryEditor from "./components/summaryEditor";
 
 // Main App components
 function App() {
@@ -47,7 +51,9 @@ function App() {
   const [selectedTag, setSelectedTag] = useState("");
   const [rssEnabled, setRssEnabled] = useState(false);
   const [rssFeedUrl, setRssFeedUrl] = useState("");
-  const [visibleCount, setVisibleCount] = useState(3);
+  //const [visibleCount, setVisibleCount] = useState(3);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 3;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -126,6 +132,14 @@ function App() {
   const filteredSummaries = filterSummaries(summaries, selectedTag, searchTerm);
 
   const sortedSummaries = sortSummaries(filteredSummaries, sortBy);
+  const totalPages = Math.ceil(sortedSummaries.length / ITEMS_PER_PAGE);
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  const currentSummaries = sortedSummaries.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE,
+  );
 
   const totalArticles = summaries.length;
 
@@ -317,7 +331,7 @@ function App() {
   // );
   return (
     <DashboardLayout>
-      <Sidebar />
+      <Sidebar></Sidebar>
 
       <div className="flex-1 p-8">
         <AuthSection
@@ -330,17 +344,23 @@ function App() {
           logout={logout}
           register={register}
         />
-
-        <StatsCards
-          summaries={summaries}
-          filteredSummaries={filteredSummaries}
-          totalArticles={totalArticles}
-          totalTags={totalTags}
-          showingResults={showingResults}
-        />
+        <Header user={user} />
 
         <div className="flex gap-8 mt-8">
           <LeftPanel>
+            <StatsCards
+              summaries={summaries}
+              filteredSummaries={filteredSummaries}
+              totalArticles={totalArticles}
+              totalTags={totalTags}
+              showingResults={showingResults}
+            />
+            <QuickAISummary
+              articleUrl={articleUrl}
+              setArticleUrl={setArticleUrl}
+              handleArticleSummary={handleArticleSummary}
+              aiLoading={aiLoading}
+            />
             <RSSSettings
               cachedResult={cachedResult}
               rssEnabled={rssEnabled}
@@ -350,12 +370,7 @@ function App() {
               saveRssConfig={saveRssConfig}
             />
 
-            <SummaryForm
-              articleUrl={articleUrl}
-              setArticleUrl={setArticleUrl}
-              handleSubmit={handleSubmit}
-              handleArticleSummary={handleArticleSummary}
-              handleAISummary={handleAISummary}
+            <SummaryEditor
               aiLoading={aiLoading}
               title={title}
               setTitle={setTitle}
@@ -363,6 +378,8 @@ function App() {
               setContent={setContent}
               source={source}
               setSource={setSource}
+              handleAISummary={handleAISummary}
+              handleSubmit={handleSubmit}
               editingId={editingId}
               filteredSummaries={filteredSummaries}
               selectedTag={selectedTag}
@@ -378,15 +395,19 @@ function App() {
             <SummaryList
               summaries={summaries}
               loading={loading}
-              filteredSummaries={sortedSummaries}
+              filteredSummaries={currentSummaries}
               setSelectedTag={setSelectedTag}
-              setVisibleCount={setVisibleCount}
+              //setVisibleCount={setVisibleCount}
               setEditingId={setEditingId}
               setTitle={setTitle}
               setContent={setContent}
               setSource={setSource}
               handleDelete={handleDelete}
-              visibleCount={visibleCount}
+              //visibleCount={visibleCount}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              totalPages={totalPages}
+              currentSummaries={currentSummaries}
             />
           </RightPanel>
         </div>

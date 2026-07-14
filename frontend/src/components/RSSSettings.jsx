@@ -1,5 +1,4 @@
 function RSSSettings({
-  cachedResult,
   rssEnabled,
   setRssEnabled,
   rssFeedUrl,
@@ -9,18 +8,6 @@ function RSSSettings({
   return (
     <>
       <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl mb-8">
-        <h2 className="text-2xl font-bold mb-4">
-          Article Intelligence 🤖
-          {cachedResult ? (
-            <div className="mt-3 inline-block bg-green-500/20 text-green-400 px-4 py-2 rounded-xl text-sm font-semibold">
-              ⚡ Cached Result
-            </div>
-          ) : (
-            <div className="mt-3 inline-block bg-blue-500/20 text-blue-400 px-4 py-2 rounded-xl text-sm font-semibold">
-              🤖 Fresh AI Summary
-            </div>
-          )}
-        </h2>
         <div className="bg-zinc-900 p-6 rounded-2xl mb-6">
           <h2 className="text-xl font-bold mb-4">RSS Control Panel</h2>
 
